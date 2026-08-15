@@ -54,12 +54,12 @@ app.post('/api/guardar-excel-respaldo', (req, res) => {
     });
 });
 
-// Ruta para obtener la lista de respaldos recibidos (Para tu laptop)
+// Ruta para obtener la lista de respaldos recibidos (Para laptop/director)
 app.get('/api/lista-respaldos', (req, res) => {
     res.json(respaldosArchivos);
 });
 
-// Ruta para descargar un respaldo .xlsx específico desde la laptop
+// Ruta para descargar un respaldo .xlsx específico
 app.get('/api/descargar-respaldo/:nombre', (req, res) => {
     const ruta = path.join(__dirname, 'respaldos', req.params.nombre);
     if (fs.existsSync(ruta)) {
