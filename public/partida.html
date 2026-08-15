@@ -86,10 +86,18 @@
         }
 
         async function darLargada() {
-            const auto = document.getElementById('num_auto').value;
+            const auto = document.getElementById('num_auto').value.trim();
             const tramo = document.getElementById('tramo').value;
             const categoria = document.getElementById('categoria').value;
-            if (!auto) return alert("Ingrese número de auto");
+
+            if (!auto) return alert("Por favor, ingrese el número de vehículo.");
+
+            // Validar si el vehículo ya fue registrado en el mismo tramo
+            const yaExiste = historialLocal.some(item => item.auto === auto && item.tramo === tramo);
+            if (yaExiste) {
+                const confirmarDuplicado = confirm(`⚠️ ALERTA: El auto #${auto} ya fue registrado en la partida del tramo ${tramo}.\n¿Deseas registrarlo nuevamente?`);
+                if (!confirmarDuplicado) return;
+            }
 
             const registro = {
                 id: Date.now(),
@@ -135,7 +143,7 @@
             if (historialLocal.length === 0) return alert("No hay registros en este tramo.");
             
             const tramo = document.getElementById('tramo').value;
-            const confirmacion = confirm(`¿Estás seguro de finalizar el tramo ${tramo}? Se guardará el Excel (.xlsx) y se limpiarán los datos para el siguiente tramo.`);
+            const confirmacion = confirm(`¿Estás seguro de finalizar el tramo ${tramo}? Se guardará el Excel (.xlsx) y se limpiarán los datos locales.`);
             if (!confirmacion) return;
 
             const nombreArchivo = `${tramo.toLowerCase()}-partida.xlsx`;
@@ -152,10 +160,10 @@
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Partidas");
 
-            // 1. Descarga Local en el celular (.xlsx)
+            // 1. Descarga Local (.xlsx)
             XLSX.writeFile(workbook, nombreArchivo);
 
-            // 2. Envío de respaldo al servidor
+            // 2. Envío de respaldo en Base64 al servidor
             const excelBase64 = XLSX.write(workbook, { bookType: 'xlsx', type: 'base64' });
 
             try {
@@ -170,7 +178,7 @@
             historialLocal = [];
             localStorage.removeItem('partidas_local');
             guardarYRenderizar();
-            alert(`Tramo ${tramo} finalizado correctamente. Se ha preparado la pantalla para la siguiente especial.`);
+            alert(`Tramo ${tramo} finalizado correctamente. Se descargó el archivo ${nombreArchivo}.`);
         }
 
         setInterval(comprobarConexion, 5000);
