@@ -3,144 +3,115 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Director de Carrera</title>
+    <title>Dashboard Laptop - Director de Carrera</title>
     <style>
         body { font-family: Arial, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
-        h1 { color: #38bdf8; text-align: center; margin-bottom: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #334155; padding-bottom: 15px; margin-bottom: 20px; }
+        h1 { color: #38bdf8; margin: 0; font-size: 1.5rem; }
+        .btn-inicio { background: #334155; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-weight: bold; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .card { background: #1e293b; border-radius: 10px; padding: 15px; border: 1px solid #334155; }
-        .card h2 { margin-top: 0; font-size: 1.2rem; display: flex; justify-content: space-between; align-items: center; }
+        .card h2 { margin-top: 0; font-size: 1.1rem; display: flex; justify-content: space-between; }
         .badge-partida { color: #4ade80; }
         .badge-llegada { color: #f43f5e; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
         th, td { text-align: left; padding: 8px; border-bottom: 1px solid #334155; }
         th { background: #0f172a; color: #94a3b8; }
         tr:nth-child(even) { background: #182234; }
-        .respaldos-section { margin-top: 25px; }
-        .btn-descargar { background: #3b82f6; color: white; padding: 4px 8px; border-radius: 4px; text-decoration: none; font-size: 0.8rem; }
-        .indicador { font-size: 0.8rem; padding: 4px 8px; border-radius: 12px; background: #0284c7; color: white; }
+        .respaldos { margin-top: 20px; }
+        .btn-descargar { background: #0284c7; color: white; padding: 4px 8px; border-radius: 4px; text-decoration: none; font-size: 0.8rem; }
     </style>
 </head>
 <body>
 
-    <h1>💻 CONTROL GENERAL EN VIVO - DIRECTOR DE CARRERA</h1>
+    <div class="header">
+        <h1>💻 CONTROL EN VIVO - DIRECTOR DE CARRERA</h1>
+        <a class="btn-inicio" href="/">📱 IR A INICIO</a>
+    </div>
 
     <div class="grid">
-        <!-- TABLA DE PARTIDAS -->
         <div class="card">
-            <h2 class="badge-partida">🟢 PARTIDAS <span class="indicador" id="total-partidas">0</span></h2>
+            <h2 class="badge-partida">🟢 PARTIDAS <span id="cant-partidas">0</span></h2>
             <table>
                 <thead>
                     <tr>
                         <th>Auto</th>
                         <th>Tramo</th>
                         <th>Categoría</th>
-                        <th>Hora Partida</th>
+                        <th>Hora</th>
                     </tr>
                 </thead>
                 <tbody id="tabla-partidas">
-                    <tr><td colspan="4">Cargando datos...</td></tr>
+                    <tr><td colspan="4">Cargando...</td></tr>
                 </tbody>
             </table>
         </div>
 
-        <!-- TABLA DE LLEGADAS -->
         <div class="card">
-            <h2 class="badge-llegada">🛑 LLEGADAS <span class="indicador" id="total-llegadas">0</span></h2>
+            <h2 class="badge-llegada">🛑 LLEGADAS <span id="cant-llegadas">0</span></h2>
             <table>
                 <thead>
                     <tr>
                         <th>Auto</th>
                         <th>Tramo</th>
-                        <th>Hora Llegada</th>
+                        <th>Hora</th>
                     </tr>
                 </thead>
                 <tbody id="tabla-llegadas">
-                    <tr><td colspan="3">Cargando datos...</td></tr>
+                    <tr><td colspan="3">Cargando...</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 
-    <!-- SECCIÓN DE ARCHIVOS EXCEL RESPALDADOS -->
-    <div class="card respaldos-section">
-        <h2>📦 ARCHIVOS EXCEL RESPALDADOS EN SERVIDOR (.XLSX)</h2>
+    <div class="card respaldos">
+        <h2>📦 RESPALDOS EXCEL EN EL SERVIDOR (.XLSX)</h2>
         <ul id="lista-archivos">
             <li>Buscando respaldos...</li>
         </ul>
     </div>
 
     <script>
-        async function cargarDatosVivo() {
+        async function cargarDatos() {
             try {
-                const res = await fetch(`/api/obtener-datos-vivo`);
+                const res = await fetch('/api/obtener-datos-vivo');
                 const data = await res.json();
 
-                // Renderizar Partidas
-                const tbodyPartidas = document.getElementById('tabla-partidas');
-                document.getElementById('total-partidas').innerText = data.partidas.length;
-                if (data.partidas.length === 0) {
-                    tbodyPartidas.innerHTML = '<tr><td colspan="4">Sin partidas registradas aún.</td></tr>';
-                } else {
-                    tbodyPartidas.innerHTML = data.partidas.map(p => `
-                        <tr>
-                            <td><b>#${p.auto}</b></td>
-                            <td>${p.tramo}</td>
-                            <td>${p.categoria || 'N/A'}</td>
-                            <td>${p.hora}</td>
-                        </tr>
-                    `).join('');
-                }
+                document.getElementById('cant-partidas').innerText = data.partidas.length;
+                document.getElementById('tabla-partidas').innerHTML = data.partidas.length === 0 
+                    ? '<tr><td colspan="4">Sin datos registrados</td></tr>'
+                    : data.partidas.map(p => `<tr><td><b>#${p.auto}</b></td><td>${p.tramo}</td><td>${p.categoria||'-'}</td><td>${p.hora}</td></tr>`).join('');
 
-                // Renderizar Llegadas
-                const tbodyLlegadas = document.getElementById('tabla-llegadas');
-                document.getElementById('total-llegadas').innerText = data.llegadas.length;
-                if (data.llegadas.length === 0) {
-                    tbodyLlegadas.innerHTML = '<tr><td colspan="3">Sin llegadas registradas aún.</td></tr>';
-                } else {
-                    tbodyLlegadas.innerHTML = data.llegadas.map(l => `
-                        <tr>
-                            <td><b>#${l.auto}</b></td>
-                            <td>${l.tramo}</td>
-                            <td>${l.hora}</td>
-                        </tr>
-                    `).join('');
-                }
+                document.getElementById('cant-llegadas').innerText = data.llegadas.length;
+                document.getElementById('tabla-llegadas').innerHTML = data.llegadas.length === 0 
+                    ? '<tr><td colspan="3">Sin datos registrados</td></tr>'
+                    : data.llegadas.map(l => `<tr><td><b>#${l.auto}</b></td><td>${l.tramo}</td><td>${l.hora}</td></tr>`).join('');
+
             } catch (e) {
-                console.error("Error al obtener datos en vivo:", e);
+                console.error("Error al cargar datos en vivo:", e);
             }
         }
 
-        async function cargarListaRespaldos() {
+        async function cargarRespaldos() {
             try {
-                const res = await fetch(`/api/lista-respaldos`);
+                const res = await fetch('/api/lista-respaldos');
                 const archivos = await res.json();
 
-                const ul = document.getElementById('lista-archivos');
-                if (archivos.length === 0) {
-                    ul.innerHTML = '<li>No hay archivos respaldados en el servidor todavía.</li>';
-                } else {
-                    ul.innerHTML = archivos.map(a => `
-                        <li style="margin-bottom: 8px;">
-                            📄 <b>${a}</b> 
-                            <a class="btn-descargar" href="/api/descargar-respaldo/${a}" target="_blank">📥 Descargar .xlsx</a>
-                        </li>
-                    `).join('');
-                }
+                document.getElementById('lista-archivos').innerHTML = archivos.length === 0 
+                    ? '<li>No hay respaldos todavía.</li>'
+                    : archivos.map(a => `<li style="margin-bottom: 5px;">📄 <b>${a}</b> <a class="btn-descargar" href="/api/descargar-respaldo/${a}">Descargar</a></li>`).join('');
             } catch (e) {
-                console.error("Error cargando archivos respaldados:", e);
+                console.error("Error respaldos:", e);
             }
         }
 
-        // Actualizar datos automáticamente cada 3 segundos
         setInterval(() => {
-            cargarDatosVivo();
-            cargarListaRespaldos();
+            cargarDatos();
+            cargarRespaldos();
         }, 3000);
 
-        // Carga inicial
-        cargarDatosVivo();
-        cargarListaRespaldos();
+        cargarDatos();
+        cargarRespaldos();
     </script>
 </body>
 </html>
