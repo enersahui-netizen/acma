@@ -57,3 +57,23 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Servidor activo en el puerto ${PORT}`);
 });
+const fs = require('fs');
+
+// Endpoint para guardar respaldos CSV en la nube
+app.post('/api/guardar-csv-respaldo', (req, res) => {
+    const { nombreArchivo, contenido } = req.body;
+    
+    if (!nombreArchivo || !contenido) {
+        return res.status(400).json({ ok: false, mensaje: "Datos incompletos" });
+    }
+
+    // Guarda el archivo en la raíz del servidor
+    fs.writeFile(path.join(__dirname, nombreArchivo), contenido, 'utf8', (err) => {
+        if (err) {
+            console.error("Error guardando el CSV de respaldo:", err);
+            return res.status(500).json({ ok: false, mensaje: "Error al guardar el archivo" });
+        }
+        console.log(`Respaldo guardado exitosamente: ${nombreArchivo}`);
+        res.status(200).json({ ok: true, mensaje: "Respaldo CSV guardado" });
+    });
+});
