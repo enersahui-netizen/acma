@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control de Tiempos - Rally</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #121212; color: #ffffff; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; text-align: center; }
+    h1 { font-size: 28px; margin-bottom: 8px; color: #00e676; text-transform: uppercase; letter-spacing: 1px; }
+    p { color: #aaa; margin-bottom: 30px; font-size: 16px; }
+    .card-container { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 20px; }
+    .btn-card { display: block; padding: 25px 20px; border-radius: 16px; text-decoration: none; font-size: 22px; font-weight: bold; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: transform 0.2s, filter 0.2s; }
+    .btn-card:active { transform: scale(0.97); }
+    .btn-partida { background: linear-gradient(135deg, #00e676, #00b0ff); color: #000; }
+    .btn-llegada { background: linear-gradient(135deg, #ffeb3b, #ff9100); color: #000; }
+    footer { margin-top: 40px; font-size: 13px; color: #555; }
+  </style>
+</head>
+<body>
+
+  <h1>🏁 CONTROL DE TIEMPOS</h1>
+  <p>Selecciona tu puesto de control:</p>
+
+  <div class="card-container">
+    <a href="partida.html" class="btn-card btn-partida">
+      🟢 JUEZ DE PARTIDA<br>
+      <span style="font-size: 14px; font-weight: normal;">(Control de Largada)</span>
+    </a>
+
+    <a href="llegada.html" class="btn-card btn-llegada">
+      🟡 JUEZ DE LLEGADA<br>
+      <span style="font-size: 14px; font-weight: normal;">(Control de Meta)</span>
+    </a>
+  </div>
+
+  <footer>Central de Cómputos — Sistema de Cronometraje</footer>
+
+</body>
+</html>
