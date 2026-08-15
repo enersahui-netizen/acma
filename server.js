@@ -8,7 +8,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Base de datos temporal en memoria
+// Almacenamiento en memoria para el evento
 let partidas = [];
 let llegadas = [];
 
@@ -28,33 +28,32 @@ app.post('/api/llegada', (req, res) => {
     res.status(200).json({ ok: true, mensaje: "Llegada registrada" });
 });
 
+// 📥 RUTA PARA DESCARGAR EL ARCHIVO CSV
+app.get('/api/descargar-csv', (req, res) => {
+    // Encabezado con codificación UTF-8 BOM para que Excel abra bien las tildes y caracteres
+    let csv = "\uFEFFAuto,Categoria,Tramo,Hora_Partida,Hora_Llegada\n";
+
+    // Unir datos de partida con llegada
+    partidas.forEach(p => {
+        const l = llegadas.find(lleg => lleg.auto === p.auto && lleg.tramo === p.tramo);
+        const horaPartida = p.hora || "";
+        const horaLlegada = l ? l.hora : "";
+        const categoria = p.categoria || "";
+
+        csv += `"${p.auto}","${categoria}","${p.tramo}","${horaPartida}","${horaLlegada}"\n`;
+    });
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename=tiempos_rally.csv');
+    res.status(200).send(csv);
+});
+
+// Ruta raíz que sirve la página principal
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'partida.html'));
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Servidor corriendo en puerto ${PORT}`);
-});
-// Ruta para exportar e integrar Partidas y Llegadas en un archivo CSV
-app.get('/api/descargar-csv', (req, res) => {
-    // Encabezados del CSV
-    let csv = "Auto,Categoria,Tramo,Hora_Partida,Hora_Llegada,Tiempo_Empleado\n";
-
-    // Recorremos las partidas registradas
-    partidas.forEach(p => {
-        // Buscamos si existe la llegada correspondiente para este auto en el mismo tramo
-        const l = llegadas.find(lleg => lleg.auto === p.auto && lleg.tramo === p.tramo);
-        
-        const horaPartida = p.hora || "";
-        const horaLlegada = l ? l.hora : "";
-        
-        // Agregar la fila al CSV
-        csv += `"${p.auto}","${p.categoria || ''}","${p.tramo}","${horaPartida}","${horaLlegada}"\n`;
-    });
-
-    // Configurar encabezados HTTP para forzar la descarga en el navegador
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename=tiempos_rally.csv');
-    res.status(200).send(csv);
+    console.log(`Servidor activo en el puerto ${PORT}`);
 });
