@@ -15,6 +15,7 @@
         label { display: block; margin-bottom: 5px; color: #aaa; }
         input, select { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #444; background: #222; color: white; box-sizing: border-box; }
         .btn-partida { width: 100%; padding: 15px; background: #00ff66; color: #000; font-weight: bold; font-size: 1.2rem; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+        .btn-csv { width: 100%; padding: 12px; background: #17a2b8; color: #fff; font-weight: bold; font-size: 1rem; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { text-align: left; padding: 10px; border-bottom: 1px solid #333; }
         th { color: #888; }
@@ -49,6 +50,7 @@
     </div>
 
     <button class="btn-partida" onclick="darLargada()">🟢 DAR LARGADA</button>
+    <button class="btn-csv" onclick="procesarCSV()">📥 DESCARGAR / ENVIAR CSV RESPALDO</button>
 
     <h3>REGISTRADOS EN ESTE CELULAR</h3>
     <table>
@@ -65,8 +67,6 @@
 
     <script>
         const URL_SERVIDOR = "https://acma-baf9.onrender.com";
-
-        // Corregida la lectura limpia de localStorage
         let historialLocal = JSON.parse(localStorage.getItem('partidas_local') || "[]");
 
         function actualizarReloj() {
@@ -84,9 +84,7 @@
                     badge.innerText = "ONLINE";
                     badge.className = "estado online";
                     sincronizarPendientes();
-                } else {
-                    throw new Error();
-                }
+                } else { throw new Error(); }
             } catch (e) {
                 badge.innerText = "OFFLINE";
                 badge.className = "estado offline";
@@ -98,10 +96,7 @@
             const tramo = document.getElementById('tramo').value;
             const categoria = document.getElementById('categoria').value;
 
-            if (!auto) {
-                alert("Por favor ingrese el número del vehículo");
-                return;
-            }
+            if (!auto) { alert("Por favor ingrese el número del vehículo"); return; }
 
             const registro = {
                 id: Date.now(),
@@ -115,7 +110,6 @@
             historialLocal.unshift(registro);
             guardarYRenderizar();
             document.getElementById('num_auto').value = '';
-
             await sincronizarPendientes();
         }
 
@@ -128,12 +122,8 @@
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(item)
                         });
-                        if (res.ok) {
-                            item.enviado = true;
-                        }
-                    } catch (e) {
-                        break; // Si falla uno, detiene la sincronización hasta recuperar conexión
-                    }
+                        if (res.ok) { item.enviado = true; }
+                    } catch (e) { break; }
                 }
             }
             guardarYRenderizar();
@@ -153,6 +143,45 @@
                 `;
                 tbody.appendChild(tr);
             });
+        }
+
+        async function procesarCSV() {
+            if (historialLocal.length === 0) {
+                alert("No hay registros para exportar.");
+                return;
+            }
+
+            const tramo = document.getElementById('tramo').value || 'PE-01';
+            const nombreArchivo = `${tramo.toLowerCase()}-partida.csv`;
+
+            let csvContent = "\uFEFFAuto,Categoria,Tramo,Hora_Partida,Estado\n";
+            historialLocal.forEach(item => {
+                const estado = item.enviado ? "Enviado" : "Pendiente";
+                csvContent += `"${item.auto}","${item.categoria || ''}","${item.tramo}","${item.hora}","${estado}"\n`;
+            });
+
+            // 1. Descarga Local en Celular
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = nombreArchivo;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            // 2. Envío de Respaldo al Servidor
+            try {
+                const res = await fetch(`${URL_SERVIDOR}/api/guardar-csv-respaldo`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nombreArchivo: nombreArchivo, contenido: csvContent })
+                });
+                if (res.ok) { alert(`CSV descargado localmente y respaldado en servidor como: ${nombreArchivo}`); }
+                else { alert("CSV descargado localmente (No se pudo conectar al servidor)"); }
+            } catch (e) {
+                alert("CSV descargado localmente (Servidor Offline)");
+            }
         }
 
         setInterval(comprobarConexion, 5000);
