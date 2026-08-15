@@ -71,11 +71,9 @@
     </div>
 
     <script>
-        const URL_SERVIDOR = ""; // Utiliza la ruta relativa actual
-
         async function cargarDatosVivo() {
             try {
-                const res = await fetch(`${URL_SERVIDOR}/api/obtener-datos-vivo`);
+                const res = await fetch(`/api/obtener-datos-vivo`);
                 const data = await res.json();
 
                 // Renderizar Partidas
@@ -115,7 +113,7 @@
 
         async function cargarListaRespaldos() {
             try {
-                const res = await fetch(`${URL_SERVIDOR}/api/lista-respaldos`);
+                const res = await fetch(`/api/lista-respaldos`);
                 const archivos = await res.json();
 
                 const ul = document.getElementById('lista-archivos');
@@ -125,7 +123,7 @@
                     ul.innerHTML = archivos.map(a => `
                         <li style="margin-bottom: 8px;">
                             📄 <b>${a}</b> 
-                            <a class="btn-descargar" href="${URL_SERVIDOR}/api/descargar-respaldo/${a}" target="_blank">📥 Descargar .xlsx</a>
+                            <a class="btn-descargar" href="/api/descargar-respaldo/${a}" target="_blank">📥 Descargar .xlsx</a>
                         </li>
                     `).join('');
                 }
