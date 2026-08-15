@@ -4,20 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Juez de Llegada</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #121212; color: #fff; padding: 20px; }
+        body { font-family: Arial, sans-serif; background: #121212; color: #fff; padding: 20px; }
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 10px; }
-        .reloj { font-size: 2.5rem; color: #ff3366; text-align: center; margin: 20px 0; font-family: monospace; }
-        .estado { padding: 5px 10px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; }
-        .online { background-color: #28a745; color: white; }
-        .offline { background-color: #dc3545; color: white; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; color: #aaa; }
-        input { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #444; background: #222; color: white; box-sizing: border-box; }
-        .btn-llegada { width: 100%; padding: 15px; background: #ff3366; color: #fff; font-weight: bold; font-size: 1.2rem; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; }
-        .btn-csv { width: 100%; padding: 12px; background: #17a2b8; color: #fff; font-weight: bold; font-size: 1rem; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { text-align: left; padding: 10px; border-bottom: 1px solid #333; }
+        .reloj { font-size: 2.2rem; color: #ff3366; text-align: center; margin: 15px 0; font-family: monospace; }
+        .estado { padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+        .online { background: #28a745; color: white; }
+        .offline { background: #dc3545; color: white; }
+        .form-group { margin-bottom: 12px; }
+        label { display: block; color: #aaa; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #444; background: #222; color: white; box-sizing: border-box; }
+        .btn-llegada { width: 100%; padding: 15px; background: #ff3366; color: #fff; font-weight: bold; font-size: 1.2rem; border: none; border-radius: 5px; margin-top: 10px; cursor: pointer; }
+        .btn-finalizar { width: 100%; padding: 12px; background: #ff9900; color: #000; font-weight: bold; font-size: 1rem; border: none; border-radius: 5px; margin-top: 15px; cursor: pointer; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { text-align: left; padding: 8px; border-bottom: 1px solid #333; }
         th { color: #888; }
     </style>
 </head>
@@ -31,26 +32,28 @@
     <div class="reloj" id="reloj-oficial">00:00:00</div>
 
     <div class="form-group">
-        <label>TRAMO (PE):</label>
-        <input type="text" id="tramo" value="PE-01">
+        <label>TRAMO ACTUAL (PE):</label>
+        <select id="tramo">
+            <option value="PE-01">PE-01</option>
+            <option value="PE-02">PE-02</option>
+            <option value="PE-03">PE-03</option>
+            <option value="PE-04">PE-04</option>
+            <option value="PE-05">PE-05</option>
+        </select>
     </div>
 
     <div class="form-group">
-        <label>N° DE VEHÍCULO (AUTO):</label>
+        <label>N° VEHÍCULO:</label>
         <input type="number" id="num_auto" placeholder="Ej: 402">
     </div>
 
     <button class="btn-llegada" onclick="registrarLlegada()">🛑 REGISTRAR LLEGADA</button>
-    <button class="btn-csv" onclick="procesarCSV()">📥 DESCARGAR / ENVIAR CSV RESPALDO</button>
+    <button class="btn-finalizar" onclick="finalizarYLimpiarTramo()">📦 FINALIZAR TRAMO (EXPORTAR .XLSX)</button>
 
-    <h3>REGISTRADOS EN ESTE CELULAR</h3>
+    <h3>REGISTROS DEL TRAMO</h3>
     <table>
         <thead>
-            <tr>
-                <th>Auto</th>
-                <th>Hora Llegada</th>
-                <th>Estado</th>
-            </tr>
+            <tr><th>Auto</th><th>Tramo</th><th>Hora</th><th>Estado</th></tr>
         </thead>
         <tbody id="historial-body"></tbody>
     </table>
@@ -60,32 +63,23 @@
         let historialLocal = JSON.parse(localStorage.getItem('llegadas_local') || "[]");
 
         function actualizarReloj() {
-            const ahora = new Date();
-            document.getElementById('reloj-oficial').innerText = ahora.toTimeString().split(' ')[0];
+            document.getElementById('reloj-oficial').innerText = new Date().toTimeString().split(' ')[0];
         }
-        setInterval(actualizarReloj, 1000);
-        actualizarReloj();
+        setInterval(actualizarReloj, 1000); actualizarReloj();
 
         async function comprobarConexion() {
             const badge = document.getElementById('indicador-estado');
             try {
                 const res = await fetch(`${URL_SERVIDOR}/`, { method: 'HEAD' });
-                if (res.ok) {
-                    badge.innerText = "ONLINE";
-                    badge.className = "estado online";
-                    sincronizarPendientes();
-                } else { throw new Error(); }
-            } catch (e) {
-                badge.innerText = "OFFLINE";
-                badge.className = "estado offline";
-            }
+                if (res.ok) { badge.innerText = "ONLINE"; badge.className = "estado online"; sincronizarPendientes(); } 
+                else throw new Error();
+            } catch (e) { badge.innerText = "OFFLINE"; badge.className = "estado offline"; }
         }
 
         async function registrarLlegada() {
             const auto = document.getElementById('num_auto').value;
             const tramo = document.getElementById('tramo').value;
-
-            if (!auto) { alert("Por favor ingrese el número del vehículo"); return; }
+            if (!auto) return alert("Ingrese número de auto");
 
             const registro = {
                 id: Date.now(),
@@ -110,7 +104,7 @@
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(item)
                         });
-                        if (res.ok) { item.enviado = true; }
+                        if (res.ok) item.enviado = true;
                     } catch (e) { break; }
                 }
             }
@@ -122,58 +116,53 @@
             const tbody = document.getElementById('historial-body');
             tbody.innerHTML = '';
             historialLocal.forEach(item => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>#${item.auto}</td>
-                    <td>${item.hora}</td>
-                    <td>${item.enviado ? '✅ Enviado' : '⏳ Pendiente'}</td>
-                `;
-                tbody.appendChild(tr);
+                tbody.innerHTML += `<tr><td>#${item.auto}</td><td>${item.tramo}</td><td>${item.hora}</td><td>${item.enviado ? '✅' : '⏳'}</td></tr>`;
             });
         }
 
-        async function procesarCSV() {
-            if (historialLocal.length === 0) {
-                alert("No hay registros para exportar.");
-                return;
-            }
+        async function finalizarYLimpiarTramo() {
+            if (historialLocal.length === 0) return alert("No hay registros en este tramo.");
+            
+            const tramo = document.getElementById('tramo').value;
+            const confirmacion = confirm(`¿Estás seguro de finalizar el tramo ${tramo}? Se guardará el Excel (.xlsx) y se limpiarán los datos para el siguiente tramo.`);
+            if (!confirmacion) return;
 
-            const tramo = document.getElementById('tramo').value || 'PE-01';
-            const nombreArchivo = `${tramo.toLowerCase()}-llegada.csv`;
+            const nombreArchivo = `${tramo.toLowerCase()}-llegada.xlsx`;
 
-            let csvContent = "\uFEFFAuto,Tramo,Hora_Llegada,Estado\n";
-            historialLocal.forEach(item => {
-                const estado = item.enviado ? "Enviado" : "Pendiente";
-                csvContent += `"${item.auto}","${item.tramo}","${item.hora}","${estado}"\n`;
-            });
+            const datosExcel = historialLocal.map(item => ({
+                "Auto": item.auto,
+                "Tramo": item.tramo,
+                "Hora Llegada": item.hora,
+                "Estado": item.enviado ? 'Enviado' : 'Pendiente'
+            }));
 
-            // 1. Descarga Local en Celular
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = nombreArchivo;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            const worksheet = XLSX.utils.json_to_sheet(datosExcel);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Llegadas");
 
-            // 2. Envío de Respaldo al Servidor
+            // 1. Descarga Local en el celular (.xlsx)
+            XLSX.writeFile(workbook, nombreArchivo);
+
+            // 2. Envío de respaldo al servidor
+            const excelBase64 = XLSX.write(workbook, { bookType: 'xlsx', type: 'base64' });
+
             try {
-                const res = await fetch(`${URL_SERVIDOR}/api/guardar-csv-respaldo`, {
+                await fetch(`${URL_SERVIDOR}/api/guardar-excel-respaldo`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nombreArchivo: nombreArchivo, contenido: csvContent })
+                    body: JSON.stringify({ nombreArchivo, contenidoBase64: excelBase64 })
                 });
-                if (res.ok) { alert(`CSV descargado localmente y respaldado en servidor como: ${nombreArchivo}`); }
-                else { alert("CSV descargado localmente (No se pudo conectar al servidor)"); }
-            } catch (e) {
-                alert("CSV descargado localmente (Servidor Offline)");
-            }
+            } catch (e) { console.log("Servidor offline"); }
+
+            // 3. Limpiar registros locales
+            historialLocal = [];
+            localStorage.removeItem('llegadas_local');
+            guardarYRenderizar();
+            alert(`Tramo ${tramo} finalizado correctamente. Se ha preparado la pantalla para la siguiente especial.`);
         }
 
         setInterval(comprobarConexion, 5000);
-        guardarYRenderizar();
-        comprobarConexion();
+        guardarYRenderizar(); comprobarConexion();
     </script>
 </body>
 </html>
