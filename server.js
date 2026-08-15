@@ -1,54 +1,80 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const fs = require('fs');
 
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Almacenamiento en memoria para el evento
 let partidas = [];
 let llegadas = [];
+let respaldosArchivos = [];
 
-// Endpoint para recibir datos de PARTIDA
+// Endpoint para recibir registros de PARTIDA
 app.post('/api/partida', (req, res) => {
-    const registro = req.body;
-    console.log("Partida recibida:", registro);
-    partidas.push(registro);
+    partidas.push(req.body);
     res.status(200).json({ ok: true, mensaje: "Partida registrada" });
 });
 
-// Endpoint para recibir datos de LLEGADA
+// Endpoint para recibir registros de LLEGADA
 app.post('/api/llegada', (req, res) => {
-    const registro = req.body;
-    console.log("Llegada recibida:", registro);
-    llegadas.push(registro);
+    llegadas.push(req.body);
     res.status(200).json({ ok: true, mensaje: "Llegada registrada" });
 });
 
-// 📥 RUTA PARA DESCARGAR EL ARCHIVO CSV
-app.get('/api/descargar-csv', (req, res) => {
-    // Encabezado con codificación UTF-8 BOM para que Excel abra bien las tildes y caracteres
-    let csv = "\uFEFFAuto,Categoria,Tramo,Hora_Partida,Hora_Llegada\n";
+// Endpoint para guardar respaldos .xlsx en el servidor
+app.post('/api/guardar-excel-respaldo', (req, res) => {
+    const { nombreArchivo, contenidoBase64 } = req.body;
+    
+    if (!nombreArchivo || !contenidoBase64) {
+        return res.status(400).json({ ok: false, mensaje: "Datos incompletos" });
+    }
 
-    // Unir datos de partida con llegada
-    partidas.forEach(p => {
-        const l = llegadas.find(lleg => lleg.auto === p.auto && lleg.tramo === p.tramo);
-        const horaPartida = p.hora || "";
-        const horaLlegada = l ? l.hora : "";
-        const categoria = p.categoria || "";
+    const folderPath = path.join(__dirname, 'respaldos');
+    if (!fs.existsSync(folderPath)) {
+        fs.mkdirSync(folderPath);
+    }
 
-        csv += `"${p.auto}","${categoria}","${p.tramo}","${horaPartida}","${horaLlegada}"\n`;
+    const filePath = path.join(folderPath, nombreArchivo);
+    const buffer = Buffer.from(contenidoBase64, 'base64');
+
+    fs.writeFile(filePath, buffer, (err) => {
+        if (err) {
+            console.error("Error guardando el .xlsx:", err);
+            return res.status(500).json({ ok: false, mensaje: "Error al guardar el archivo" });
+        }
+        if (!respaldosArchivos.includes(nombreArchivo)) {
+            respaldosArchivos.push(nombreArchivo);
+        }
+        console.log(`Archivo .xlsx respaldado: ${nombreArchivo}`);
+        res.status(200).json({ ok: true, mensaje: "Respaldo .xlsx guardado correctamente" });
     });
-
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', 'attachment; filename=tiempos_rally.csv');
-    res.status(200).send(csv);
 });
 
-// Ruta raíz que sirve la página principal
+// Ruta para obtener la lista de respaldos recibidos (Para tu laptop)
+app.get('/api/lista-respaldos', (req, res) => {
+    res.json(respaldosArchivos);
+});
+
+// Ruta para descargar un respaldo .xlsx específico desde la laptop
+app.get('/api/descargar-respaldo/:nombre', (req, res) => {
+    const ruta = path.join(__dirname, 'respaldos', req.params.nombre);
+    if (fs.existsSync(ruta)) {
+        res.download(ruta);
+    } else {
+        res.status(404).send("Archivo no encontrado en el servidor");
+    }
+});
+
+// Vista especial para la Laptop del Director de Carrera
+app.get('/laptop', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'laptop.html'));
+});
+
+// Ruta raíz
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'partida.html'));
 });
@@ -56,24 +82,4 @@ app.get('/', (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Servidor activo en el puerto ${PORT}`);
-});
-const fs = require('fs');
-
-// Endpoint para guardar respaldos CSV en la nube
-app.post('/api/guardar-csv-respaldo', (req, res) => {
-    const { nombreArchivo, contenido } = req.body;
-    
-    if (!nombreArchivo || !contenido) {
-        return res.status(400).json({ ok: false, mensaje: "Datos incompletos" });
-    }
-
-    // Guarda el archivo en la raíz del servidor
-    fs.writeFile(path.join(__dirname, nombreArchivo), contenido, 'utf8', (err) => {
-        if (err) {
-            console.error("Error guardando el CSV de respaldo:", err);
-            return res.status(500).json({ ok: false, mensaje: "Error al guardar el archivo" });
-        }
-        console.log(`Respaldo guardado exitosamente: ${nombreArchivo}`);
-        res.status(200).json({ ok: true, mensaje: "Respaldo CSV guardado" });
-    });
 });
