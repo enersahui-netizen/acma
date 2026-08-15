@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const fs = require('fs');
+const XLSX = require('xlsx'); // Requiere instala 'xlsx' en package.json
 
 const app = express();
 
@@ -16,13 +17,23 @@ let respaldosArchivos = [];
 // Endpoint para recibir registros de PARTIDA
 app.post('/api/partida', (req, res) => {
     partidas.push(req.body);
+    console.log("Nueva partida recibida:", req.body);
     res.status(200).json({ ok: true, mensaje: "Partida registrada" });
 });
 
 // Endpoint para recibir registros de LLEGADA
 app.post('/api/llegada', (req, res) => {
     llegadas.push(req.body);
+    console.log("Nueva llegada recibida:", req.body);
     res.status(200).json({ ok: true, mensaje: "Llegada registrada" });
+});
+
+// NUEVO: Endpoint para consultar todas las partidas y llegadas recibidas en vivo
+app.get('/api/obtener-datos-vivo', (req, res) => {
+    res.json({
+        partidas: partidas,
+        llegadas: llegadas
+    });
 });
 
 // Endpoint para guardar respaldos .xlsx en el servidor
@@ -54,9 +65,14 @@ app.post('/api/guardar-excel-respaldo', (req, res) => {
     });
 });
 
-// Ruta para obtener la lista de respaldos recibidos (Para laptop/director)
+// Ruta para obtener la lista de respaldos recibidos
 app.get('/api/lista-respaldos', (req, res) => {
-    res.json(respaldosArchivos);
+    const folderPath = path.join(__dirname, 'respaldos');
+    if (fs.existsSync(folderPath)) {
+        const archivos = fs.readdirSync(folderPath).filter(f => f.endsWith('.xlsx'));
+        return res.json(archivos);
+    }
+    res.json([]);
 });
 
 // Ruta para descargar un respaldo .xlsx específico
@@ -79,7 +95,7 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'partida.html'));
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
     console.log(`Servidor activo en el puerto ${PORT}`);
 });
