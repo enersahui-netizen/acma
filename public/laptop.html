@@ -3,35 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Laptop - Director de Carrera</title>
+    <title>ACMA - Director de Carrera</title>
+    <!-- Librería XLSX para leer archivos Excel directamente en el navegador -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #334155; padding-bottom: 15px; margin-bottom: 20px; }
-        h1 { color: #38bdf8; margin: 0; font-size: 1.5rem; }
-        .btn-inicio { background: #334155; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-weight: bold; }
+        h1 { color: #38bdf8; margin: 0; font-size: 1.4rem; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .card { background: #1e293b; border-radius: 10px; padding: 15px; border: 1px solid #334155; }
-        .card h2 { margin-top: 0; font-size: 1.1rem; display: flex; justify-content: space-between; }
         .badge-partida { color: #4ade80; }
         .badge-llegada { color: #f43f5e; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; }
         th, td { text-align: left; padding: 8px; border-bottom: 1px solid #334155; }
         th { background: #0f172a; color: #94a3b8; }
         tr:nth-child(even) { background: #182234; }
-        .respaldos { margin-top: 20px; }
-        .btn-descargar { background: #0284c7; color: white; padding: 4px 8px; border-radius: 4px; text-decoration: none; font-size: 0.8rem; }
+        .btn-danger { background: #dc2626; color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-upload { background: #0284c7; color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-inicio { background: #334155; color: white; padding: 8px 14px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-left: 10px; }
     </style>
 </head>
 <body>
 
     <div class="header">
         <h1>💻 CONTROL EN VIVO - DIRECTOR DE CARRERA</h1>
-        <a class="btn-inicio" href="/">📱 IR A INICIO</a>
+        <div>
+            <button class="btn-danger" onclick="limpiarTodo()">🗑️ LIMPIAR DATOS</button>
+            <a class="btn-inicio" href="/">📱 IR A MÓVIL</a>
+        </div>
     </div>
 
+    <!-- CARGA DE EXCEL DE COMPETIDORES -->
+    <div class="card" style="margin-bottom: 20px;">
+        <h3 style="margin-top: 0; color: #38bdf8;">📋 CARGAR LISTA OFICIAL DE COMPETIDORES (.XLSX)</h3>
+        <input type="file" id="excelInput" accept=".xlsx, .xls" style="color: white;">
+        <button class="btn-upload" onclick="procesarExcel()">Cargar y Validar Lista</button>
+        <span id="estado-excel" style="margin-left: 10px; font-weight: bold;"></span>
+    </div>
+
+    <!-- TABLAS EN VIVO -->
     <div class="grid">
         <div class="card">
-            <h2 class="badge-partida">🟢 PARTIDAS <span id="cant-partidas">0</span></h2>
+            <h2 class="badge-partida">🟢 PARTIDAS (<span id="cnt-partidas">0</span>)</h2>
             <table>
                 <thead>
                     <tr>
@@ -41,14 +54,14 @@
                         <th>Hora</th>
                     </tr>
                 </thead>
-                <tbody id="tabla-partidas">
-                    <tr><td colspan="4">Cargando...</td></tr>
+                <tbody id="t-partidas">
+                    <tr><td colspan="4">Sin datos registrados</td></tr>
                 </tbody>
             </table>
         </div>
 
         <div class="card">
-            <h2 class="badge-llegada">🛑 LLEGADAS <span id="cant-llegadas">0</span></h2>
+            <h2 class="badge-llegada">🛑 LLEGADAS (<span id="cnt-llegadas">0</span>)</h2>
             <table>
                 <thead>
                     <tr>
@@ -57,61 +70,81 @@
                         <th>Hora</th>
                     </tr>
                 </thead>
-                <tbody id="tabla-llegadas">
-                    <tr><td colspan="3">Cargando...</td></tr>
+                <tbody id="t-llegadas">
+                    <tr><td colspan="3">Sin datos registrados</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 
-    <div class="card respaldos">
-        <h2>📦 RESPALDOS EXCEL EN EL SERVIDOR (.XLSX)</h2>
-        <ul id="lista-archivos">
-            <li>Buscando respaldos...</li>
-        </ul>
-    </div>
-
     <script>
+        // Función para procesar el Excel subido
+        async function procesarExcel() {
+            const input = document.getElementById('excelInput');
+            const estado = document.getElementById('estado-excel');
+
+            if (!input.files[0]) return alert("Por favor selecciona un archivo Excel (.xlsx)");
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const json = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+                    const res = await fetch('/api/cargar-competidores', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ lista: json })
+                    });
+
+                    const result = await res.json();
+                    if (result.ok) {
+                        estado.innerHTML = '<span style="color: #4ade80;">✓ ' + result.mensaje + '</span>';
+                    } else {
+                        estado.innerHTML = '<span style="color: #f43f5e;">❌ Error al procesar</span>';
+                    }
+                } catch (err) {
+                    console.error("Error leyendo Excel:", err);
+                    estado.innerHTML = '<span style="color: #f43f5e;">❌ Archivo no válido</span>';
+                }
+            };
+            reader.readAsArrayBuffer(input.files[0]);
+        }
+
+        // Obtener datos en tiempo real
         async function cargarDatos() {
             try {
                 const res = await fetch('/api/obtener-datos-vivo');
                 const data = await res.json();
 
-                document.getElementById('cant-partidas').innerText = data.partidas.length;
-                document.getElementById('tabla-partidas').innerHTML = data.partidas.length === 0 
+                document.getElementById('cnt-partidas').innerText = data.partidas.length;
+                document.getElementById('t-partidas').innerHTML = data.partidas.length === 0
                     ? '<tr><td colspan="4">Sin datos registrados</td></tr>'
-                    : data.partidas.map(p => `<tr><td><b>#${p.auto}</b></td><td>${p.tramo}</td><td>${p.categoria||'-'}</td><td>${p.hora}</td></tr>`).join('');
+                    : data.partidas.map(p => `<tr><td><b>#${p.auto}</b></td><td>${p.tramo}</td><td>${p.categoria || '-'}</td><td>${p.hora}</td></tr>`).join('');
 
-                document.getElementById('cant-llegadas').innerText = data.llegadas.length;
-                document.getElementById('tabla-llegadas').innerHTML = data.llegadas.length === 0 
+                document.getElementById('cnt-llegadas').innerText = data.llegadas.length;
+                document.getElementById('t-llegadas').innerHTML = data.llegadas.length === 0
                     ? '<tr><td colspan="3">Sin datos registrados</td></tr>'
                     : data.llegadas.map(l => `<tr><td><b>#${l.auto}</b></td><td>${l.tramo}</td><td>${l.hora}</td></tr>`).join('');
 
             } catch (e) {
-                console.error("Error al cargar datos en vivo:", e);
+                console.error("Error obteniendo datos:", e);
             }
         }
 
-        async function cargarRespaldos() {
-            try {
-                const res = await fetch('/api/lista-respaldos');
-                const archivos = await res.json();
-
-                document.getElementById('lista-archivos').innerHTML = archivos.length === 0 
-                    ? '<li>No hay respaldos todavía.</li>'
-                    : archivos.map(a => `<li style="margin-bottom: 5px;">📄 <b>${a}</b> <a class="btn-descargar" href="/api/descargar-respaldo/${a}">Descargar</a></li>`).join('');
-            } catch (e) {
-                console.error("Error respaldos:", e);
+        // Limpiar partidas y llegadas del servidor
+        async function limpiarTodo() {
+            if (confirm("¿Estás seguro de reiniciar los tiempos de partidas y llegadas?")) {
+                await fetch('/api/limpiar-todo', { method: 'POST' });
+                cargarDatos();
             }
         }
 
-        setInterval(() => {
-            cargarDatos();
-            cargarRespaldos();
-        }, 3000);
-
+        // Actualización automática cada 3 segundos
+        setInterval(cargarDatos, 3000);
         cargarDatos();
-        cargarRespaldos();
     </script>
 </body>
 </html>
