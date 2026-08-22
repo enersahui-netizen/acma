@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Tiempos - ACMA</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0f172a;
+            color: #f8fafc;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            padding: 20px;
+            border-radius: 12px;
+            border-bottom: 2px solid #38bdf8;
+            margin-bottom: 25px;
+        }
+        .header h1 {
+            font-size: 1.8rem;
+            color: #38bdf8;
+            margin: 0;
+        }
+        .header p {
+            color: #94a3b8;
+            margin: 5px 0 0 0;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .filtros {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+        .filtro-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .filtro-group label {
+            color: #cbd5e1;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        .filtro-group select, .filtro-group input {
+            background: #1e293b;
+            color: #f8fafc;
+            border: 1px solid #334155;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        .btn-filtrar {
+            background: #0284c7;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            height: fit-content;
+            align-self: flex-end;
+        }
+        .btn-filtrar:hover {
+            background: #0369a1;
+        }
+        .btn-exportar {
+            background: #16a34a;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+        .btn-exportar:hover {
+            background: #15803d;
+            transform: scale(1.05);
+        }
+        .card {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            margin-bottom: 20px;
+        }
+        .card h2 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: #38bdf8;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        thead {
+            background: rgba(15, 23, 42, 0.8);
+        }
+        th {
+            padding: 12px;
+            text-align: left;
+            color: #94a3b8;
+            font-weight: 600;
+            border-bottom: 2px solid #334155;
+        }
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #334155;
+        }
+        tbody tr:hover {
+            background: rgba(56, 189, 248, 0.05);
+        }
+        tbody tr:nth-child(even) {
+            background: rgba(15, 23, 42, 0.3);
+        }
+        .sin-datos {
+            text-align: center;
+            color: #94a3b8;
+            padding: 30px;
+            font-style: italic;
+        }
+        .tiempo-positivo {
+            color: #22c55e;
+        }
+        .tiempo-negativo {
+            color: #ef4444;
+        }
+        .tiempo-referencia {
+            color: #38bdf8;
+        }
+        .tab-container {
+            margin-top: 20px;
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #334155;
+        }
+        .tab {
+            padding: 10px 20px;
+            background: transparent;
+            color: #94a3b8;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .tab.active {
+            color: #38bdf8;
+            border-bottom-color: #38bdf8;
+        }
+        .tab:hover {
+            color: #cbd5e1;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .resumen {
+            background: rgba(15, 23, 42, 0.5);
+            border-left: 4px solid #38bdf8;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+        }
+        .resumen p {
+            margin: 5px 0;
+            color: #cbd5e1;
+        }
+        .resumen strong {
+            color: #38bdf8;
+        }
+        .badge {
+            display: inline-block;
+            background: rgba(56, 189, 248, 0.2);
+            color: #38bdf8;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-right: 5px;
+        }
+        .badge-categoria {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+        .badge-ciudad {
+            background: rgba(168, 85, 247, 0.2);
+            color: #d8b4fe;
+        }
+        .btn-volver {
+            background: #334155;
+            color: #f8fafc;
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+        }
+        .btn-volver:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>📊 REPORTE DE TIEMPOS</h1>
+            <p>Análisis detallado de partidas y llegadas por tramo y tiempos acumulados</p>
+        </div>
+
+        <div class="filtros">
+            <div class="filtro-group">
+                <label for="filtro-categoria">Categoría</label>
+                <select id="filtro-categoria">
+                    <option value="">Todas</option>
+                </select>
+            </div>
+            <div class="filtro-group">
+                <label for="filtro-ciudad">Ciudad</label>
+                <select id="filtro-ciudad">
+                    <option value="">Todas</option>
+                </select>
+            </div>
+            <div class="filtro-group">
+                <label for="filtro-tramo">Tramo</label>
+                <select id="filtro-tramo">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+            <div class="filtro-group">
+                <input type="number" id="filtro-auto" placeholder="Nº Auto (opcional)" min="1">
+            </div>
+            <button class="btn-filtrar" onclick="cargarReporte()">🔍 Filtrar</button>
+        </div>
+
+        <button class="btn-exportar" onclick="exportarExcel()">📥 Exportar a Excel</button>
+
+        <div class="tab-container">
+            <div class="tabs">
+                <button class="tab active" onclick="mostrarTab('por-tramo')">Por Tramo</button>
+                <button class="tab" onclick="mostrarTab('acumulado')">Tiempos Acumulados</button>
+                <button class="tab" onclick="mostrarTab('competidores')">Competidores</button>
+            </div>
+
+            <!-- TAB 1: POR TRAMO -->
+            <div id="por-tramo" class="tab-content active">
+                <div class="card">
+                    <h2>Tiempos por Tramo</h2>
+                    <div id="resumen-tramo" class="resumen"></div>
+                    <div id="datos-por-tramo"></div>
+                </div>
+            </div>
+
+            <!-- TAB 2: ACUMULADO -->
+            <div id="acumulado" class="tab-content">
+                <div class="card">
+                    <h2>Ranking de Tiempos Acumulados</h2>
+                    <div id="resumen-acumulado" class="resumen"></div>
+                    <table id="tabla-acumulado">
+                        <thead>
+                            <tr>
+                                <th>Ranking</th>
+                                <th>Auto</th>
+                                <th>Piloto</th>
+                                <th>Categoría</th>
+                                <th>Ciudad</th>
+                                <th>Tiempo Acumulado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-acumulado">
+                            <tr><td colspan="6" class="sin-datos">Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 3: COMPETIDORES -->
+            <div id="competidores" class="tab-content">
+                <div class="card">
+                    <h2>Listado Completo de Competidores</h2>
+                    <div id="resumen-competidores" class="resumen"></div>
+                    <table id="tabla-competidores">
+                        <thead>
+                            <tr>
+                                <th>Auto</th>
+                                <th>Piloto</th>
+                                <th>Copiloto</th>
+                                <th>Categoría</th>
+                                <th>Representante</th>
+                                <th>Ciudad</th>
+                                <th>Tramos</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-competidores">
+                            <tr><td colspan="7" class="sin-datos">Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <a href="/" class="btn-volver">← Volver al inicio</a>
+    </div>
+
+    <script>
+        const URL_SERVIDOR = window.location.origin;
+        let datosCompletos = [];
+        let filtrosActuales = { categoria: '', ciudad: '', tramo: '', auto: '' };
+
+        function mostrarTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function formatearTiempo(ms) {
+            if (!ms) return '-';
+            const minutos = Math.floor(ms / 60000);
+            const segundos = Math.floor((ms % 60000) / 1000);
+            const milisegundos = ms % 1000;
+            return `${minutos}:${String(segundos).padStart(2, '0')}.${String(milisegundos).padStart(3, '0')}`;
+        }
+
+        async function cargarReporte() {
+            // Obtener filtros
+            filtrosActuales.categoria = document.getElementById('filtro-categoria').value;
+            filtrosActuales.ciudad = document.getElementById('filtro-ciudad').value;
+            filtrosActuales.tramo = document.getElementById('filtro-tramo').value;
+            filtrosActuales.auto = document.getElementById('filtro-auto').value;
+
+            try {
+                const params = new URLSearchParams();
+                if (filtrosActuales.categoria) params.append('categoria', filtrosActuales.categoria);
+                if (filtrosActuales.ciudad) params.append('ciudad', filtrosActuales.ciudad);
+                if (filtrosActuales.tramo) params.append('tramo', filtrosActuales.tramo);
+
+                const res = await fetch(`${URL_SERVIDOR}/api/reporte-datos?${params}`, {
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                const respuesta = await res.json();
+                if (respuesta.ok) {
+                    datosCompletos = respuesta.datos || [];
+                    
+                    if (filtrosActuales.auto) {
+                        datosCompletos = datosCompletos.filter(d => d.auto === filtrosActuales.auto);
+                    }
+
+                    renderizarTodosTabs();
+                    cargarFiltros();
+                } else {
+                    alert("Error: " + (respuesta.error || "No se pudieron cargar los datos"));
+                }
+            } catch (e) {
+                console.error("Error:", e);
+                alert("Error al cargar reporte: " + e.message);
+            }
+        }
+
+        async function cargarFiltros() {
+            try {
+                const [tramos, ciudades, categorias] = await Promise.all([
+                    fetch(`${URL_SERVIDOR}/api/tramos`).then(r => r.json()),
+                    fetch(`${URL_SERVIDOR}/api/ciudades`).then(r => r.json()),
+                    fetch(`${URL_SERVIDOR}/api/categorias`).then(r => r.json())
+                ]);
+
+                // Tramos
+                const selectTramo = document.getElementById('filtro-tramo');
+                tramos.tramos?.forEach(t => {
+                    if (!selectTramo.querySelector(`option[value="${t}"]`)) {
+                        selectTramo.innerHTML += `<option value="${t}">${t}</option>`;
+                    }
+                });
+
+                // Ciudades
+                const selectCiudad = document.getElementById('filtro-ciudad');
+                ciudades.ciudades?.forEach(c => {
+                    if (!selectCiudad.querySelector(`option[value="${c}"]`)) {
+                        selectCiudad.innerHTML += `<option value="${c}">${c}</option>`;
+                    }
+                });
+
+                // Categorías
+                const selectCategoria = document.getElementById('filtro-categoria');
+                categorias.categorias?.forEach(c => {
+                    if (!selectCategoria.querySelector(`option[value="${c}"]`)) {
+                        selectCategoria.innerHTML += `<option value="${c}">${c}</option>`;
+                    }
+                });
+            } catch (e) {
+                console.error("Error cargando filtros:", e);
+            }
+        }
+
+        function renderizarTodosTabs() {
+            renderizarPorTramo();
+            renderizarAcumulado();
+            renderizarCompetidores();
+        }
+
+        function renderizarPorTramo() {
+            const tramos = [...new Set(datosCompletos.map(d => d.tramo))].sort();
+
+            if (tramos.length === 0) {
+                document.getElementById('datos-por-tramo').innerHTML = '<div class="sin-datos">Sin datos para mostrar</div>';
+                return;
+            }
+
+            let html = '';
+            tramos.forEach(tramo => {
+                const datosTramo = datosCompletos.filter(d => d.tramo === tramo);
+                const conTiempo = datosTramo.filter(d => d.tiempo_ms);
+                const promedio = conTiempo.length > 0 
+                    ? formatearTiempo(conTiempo.reduce((a, b) => a + (b.tiempo_ms || 0), 0) / conTiempo.length)
+                    : '-';
+                const minimo = conTiempo.length > 0 
+                    ? formatearTiempo(Math.min(...conTiempo.map(d => d.tiempo_ms)))
+                    : '-';
+                const maximo = conTiempo.length > 0 
+                    ? formatearTiempo(Math.max(...conTiempo.map(d => d.tiempo_ms)))
+                    : '-';
+
+                html += `
+                    <div style="margin-bottom: 25px;">
+                        <h3 style="color: #38bdf8; margin-bottom: 10px;">🏁 TRAMO ${tramo}</h3>
+                        <div class="resumen">
+                            <p><strong>Registros:</strong> ${datosTramo.length} vehículos | <strong>Con tiempo:</strong> ${conTiempo.length} | <strong>Promedio:</strong> <span class="tiempo-referencia">${promedio}</span></p>
+                            <p><strong>Mejor tiempo:</strong> <span class="tiempo-positivo">${minimo}</span> | <strong>Peor tiempo:</strong> <span class="tiempo-negativo">${maximo}</span></p>
+                        </div>
+                        <table style="font-size: 0.85rem;">
+                            <thead>
+                                <tr>
+                                    <th>Ranking</th>
+                                    <th>Auto</th>
+                                    <th>Piloto</th>
+                                    <th>Hora Partida</th>
+                                    <th>Hora Llegada</th>
+                                    <th>Tiempo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${datosTramo
+                                    .sort((a, b) => (a.tiempo_ms || Infinity) - (b.tiempo_ms || Infinity))
+                                    .map((d, i) => `
+                                        <tr>
+                                            <td><strong>${i + 1}</strong></td>
+                                            <td>#${d.auto}</td>
+                                            <td>${d.piloto || '-'}</td>
+                                            <td>${d.hora_partida || '-'}</td>
+                                            <td>${d.hora_llegada || '-'}</td>
+                                            <td ${d.tiempo_ms ? 'class="tiempo-positivo"' : ''}><strong>${formatearTiempo(d.tiempo_ms)}</strong></td>
+                                        </tr>
+                                    `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            });
+
+            document.getElementById('datos-por-tramo').innerHTML = html;
+        }
+
+        function renderizarAcumulado() {
+            // Agrupar por auto y calcular tiempo total
+            const porAuto = {};
+            datosCompletos.forEach(d => {
+                if (!porAuto[d.auto]) {
+                    porAuto[d.auto] = {
+                        auto: d.auto,
+                        piloto: d.piloto,
+                        categoria: d.categoria,
+                        ciudad: d.ciudad,
+                        representante: d.representante,
+                        tiempo_total: 0,
+                        tramos: 0
+                    };
+                }
+                if (d.tiempo_ms) {
+                    porAuto[d.auto].tiempo_total += d.tiempo_ms;
+                    porAuto[d.auto].tramos++;
+                }
+            });
+
+            const ranking = Object.values(porAuto)
+                .filter(a => a.tiempo_total > 0)
+                .sort((a, b) => a.tiempo_total - b.tiempo_total);
+
+            document.getElementById('tbody-acumulado').innerHTML = ranking.length === 0
+                ? '<tr><td colspan="6" class="sin-datos">Sin datos</td></tr>'
+                : ranking.map((r, i) => `
+                    <tr>
+                        <td><strong>${i + 1}</strong></td>
+                        <td><strong>#${r.auto}</strong></td>
+                        <td>${r.piloto || '-'}</td>
+                        <td><span class="badge badge-categoria">${r.categoria || '-'}</span></td>
+                        <td><span class="badge badge-ciudad">${r.ciudad || '-'}</span></td>
+                        <td><strong class="tiempo-positivo">${formatearTiempo(r.tiempo_total)}</strong> (${r.tramos} tramos)</td>
+                    </tr>
+                `).join('');
+
+            const resumen = document.getElementById('resumen-acumulado');
+            resumen.innerHTML = `
+                <p><strong>Total de competidores:</strong> ${ranking.length}</p>
+                <p><strong>Mejor tiempo acumulado:</strong> <span class="tiempo-positivo">${ranking[0] ? formatearTiempo(ranking[0].tiempo_total) : '-'}</span> (Auto #${ranking[0]?.auto || '-'})</p>
+            `;
+        }
+
+        function renderizarCompetidores() {
+            const competidores = [...new Map(datosCompletos.map(d => [d.auto, d])).values()];
+
+            document.getElementById('tbody-competidores').innerHTML = competidores.length === 0
+                ? '<tr><td colspan="7" class="sin-datos">Sin datos</td></tr>'
+                : competidores.map(c => {
+                    const tramosCompetidor = [...new Set(datosCompletos.filter(d => d.auto === c.auto).map(d => d.tramo))].join(', ');
+                    return `
+                        <tr>
+                            <td><strong>#${c.auto}</strong></td>
+                            <td>${c.piloto || '-'}</td>
+                            <td>${c.copiloto || '-'}</td>
+                            <td>${c.categoria || '-'}</td>
+                            <td>${c.representante || '-'}</td>
+                            <td>${c.ciudad || '-'}</td>
+                            <td>${tramosCompetidor || '-'}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+            const resumen = document.getElementById('resumen-competidores');
+            resumen.innerHTML = `
+                <p><strong>Total de competidores:</strong> ${competidores.length}</p>
+                <p><strong>Total de registros:</strong> ${datosCompletos.length}</p>
+            `;
+        }
+
+        function exportarExcel() {
+            if (datosCompletos.length === 0) {
+                alert("No hay datos para exportar");
+                return;
+            }
+
+            const datosExcel = datosCompletos.map(d => ({
+                "Auto": d.auto,
+                "Piloto": d.piloto || '',
+                "Copiloto": d.copiloto || '',
+                "Categoría": d.categoria || '',
+                "Representante": d.representante || '',
+                "Ciudad": d.ciudad || '',
+                "Tramo": d.tramo,
+                "Hora Partida": d.hora_partida || '',
+                "Hora Llegada": d.hora_llegada || '',
+                "Tiempo (ms)": d.tiempo_ms || '',
+                "Tiempo Formateado": formatearTiempo(d.tiempo_ms)
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(datosExcel);
+            worksheet['!cols'] = [
+                { wch: 8 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
+                { wch: 18 }, { wch: 15 }, { wch: 8 }, { wch: 12 },
+                { wch: 12 }, { wch: 12 }, { wch: 15 }
+            ];
+
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Reporte");
+            XLSX.writeFile(workbook, `reporte-tiempos-${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
+
+        // Cargar datos al iniciar
+        cargarReporte();
+        cargarFiltros();
+    </script>
+
+</body>
+</html>

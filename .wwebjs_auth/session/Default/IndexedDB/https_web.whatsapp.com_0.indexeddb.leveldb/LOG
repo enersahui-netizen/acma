@@ -1,0 +1,52 @@
+2026/08/14-21:28:20.474 2820 Reusing MANIFEST D:\SistemaCronometraje\.wwebjs_auth\session\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2026/08/14-21:28:20.475 2820 Recovering log #801
+2026/08/14-21:28:20.495 2820 Reusing old log D:\SistemaCronometraje\.wwebjs_auth\session\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/000801.log 
+2026/08/14-21:30:51.238 25c0 Level-0 table #813: started
+2026/08/14-21:30:51.288 25c0 Level-0 table #813: 1173967 bytes OK
+2026/08/14-21:30:51.291 25c0 Delete type=0 #801
+2026/08/14-21:32:13.678 2820 Compacting 1@1 + 8@2 files
+2026/08/14-21:32:13.920 2820 Generated table #814@1: 36874 keys, 2209721 bytes
+2026/08/14-21:32:14.171 2820 Generated table #815@1: 59792 keys, 2220625 bytes
+2026/08/14-21:32:14.623 2820 Generated table #816@1: 55817 keys, 2223958 bytes
+2026/08/14-21:32:14.836 2820 Generated table #817@1: 29119 keys, 2186426 bytes
+2026/08/14-21:32:14.884 2820 Generated table #818@1: 1079 keys, 2137486 bytes
+2026/08/14-21:32:14.988 2820 Generated table #819@1: 11330 keys, 2190114 bytes
+2026/08/14-21:32:15.080 2820 Generated table #820@1: 24705 keys, 2197866 bytes
+2026/08/14-21:32:15.179 2820 Generated table #821@1: 68020 keys, 2212590 bytes
+2026/08/14-21:32:15.187 2820 Generated table #822@1: 985 keys, 32467 bytes
+2026/08/14-21:32:15.187 2820 Compacted 1@1 + 8@2 files => 17611253 bytes
+2026/08/14-21:32:15.189 2820 compacted to: files[ 0 0 9 0 0 0 0 ]
+2026/08/14-21:32:15.189 2820 Delete type=2 #803
+2026/08/14-21:32:15.189 2820 Delete type=2 #804
+2026/08/14-21:32:15.189 2820 Delete type=2 #805
+2026/08/14-21:32:15.189 2820 Delete type=2 #806
+2026/08/14-21:32:15.189 2820 Delete type=2 #807
+2026/08/14-21:32:15.189 2820 Delete type=2 #808
+2026/08/14-21:32:15.190 2820 Delete type=2 #809
+2026/08/14-21:32:15.190 2820 Delete type=2 #810
+2026/08/14-21:32:15.190 2820 Delete type=2 #813
+2026/08/14-21:43:02.256 3c24 Level-0 table #824: started
+2026/08/14-21:43:02.305 3c24 Level-0 table #824: 1102247 bytes OK
+2026/08/14-21:43:02.308 3c24 Delete type=0 #812
+2026/08/14-21:45:09.345 2820 Compacting 1@1 + 9@2 files
+2026/08/14-21:45:09.472 2820 Generated table #825@1: 36875 keys, 2209379 bytes
+2026/08/14-21:45:09.588 2820 Generated table #826@1: 60192 keys, 2221194 bytes
+2026/08/14-21:45:09.725 2820 Generated table #827@1: 55545 keys, 2223648 bytes
+2026/08/14-21:45:09.811 2820 Generated table #828@1: 28691 keys, 2182261 bytes
+2026/08/14-21:45:09.858 2820 Generated table #829@1: 1075 keys, 2136717 bytes
+2026/08/14-21:45:09.925 2820 Generated table #830@1: 11490 keys, 2190067 bytes
+2026/08/14-21:45:10.010 2820 Generated table #831@1: 24600 keys, 2193704 bytes
+2026/08/14-21:45:10.104 2820 Generated table #832@1: 68029 keys, 2214776 bytes
+2026/08/14-21:45:10.124 2820 Generated table #833@1: 1078 keys, 42620 bytes
+2026/08/14-21:45:10.124 2820 Compacted 1@1 + 9@2 files => 17614366 bytes
+2026/08/14-21:45:10.129 2820 compacted to: files[ 0 0 9 0 0 0 0 ]
+2026/08/14-21:45:10.130 2820 Delete type=2 #814
+2026/08/14-21:45:10.130 2820 Delete type=2 #815
+2026/08/14-21:45:10.130 2820 Delete type=2 #816
+2026/08/14-21:45:10.130 2820 Delete type=2 #817
+2026/08/14-21:45:10.130 2820 Delete type=2 #818
+2026/08/14-21:45:10.130 2820 Delete type=2 #819
+2026/08/14-21:45:10.130 2820 Delete type=2 #820
+2026/08/14-21:45:10.130 2820 Delete type=2 #821
+2026/08/14-21:45:10.130 2820 Delete type=2 #822
+2026/08/14-21:45:10.131 2820 Delete type=2 #824
