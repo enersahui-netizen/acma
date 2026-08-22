@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ACMA - Control de Partida</title>
+    <!-- Librería XLSX en el cliente para descarga asegurada -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; background-color: #121212; color: #ffffff; margin: 0; padding: 20px; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
@@ -124,13 +126,34 @@
             `).join('');
         }
 
+        function descargarExcelLocal(tramo) {
+            const datosExcel = registrosLocal.map(r => ({
+                "Vehículo": String(r.auto).replace('#', '').trim(),
+                "Tramo": r.tramo || tramo,
+                "Hora": r.hora,
+                "Estado": r.estado || 'REGISTRADO'
+            }));
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(datosExcel);
+            XLSX.utils.book_append_sheet(wb, ws, "PARTIDAS");
+            
+            const fechaHora = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+            XLSX.writeFile(wb, `PARTIDA_${tramo}_${fechaHora}.xlsx`);
+        }
+
         async function exportarExcel() {
             if (registrosLocal.length === 0) {
                 alert("⚠️ No hay registros para exportar.");
                 return;
             }
+
             const tramo = document.getElementById('tramo').value;
 
+            // 1. Generar y descargar inmediatamente en el celular
+            descargarExcelLocal(tramo);
+
+            // 2. Intentar subir respaldo al servidor Render
             try {
                 const res = await fetch('/api/guardar-respaldo', {
                     method: 'POST',
@@ -140,19 +163,12 @@
 
                 const data = await res.json();
                 if (data.ok) {
-                    alert(`✅ Respaldo guardado exitosamente:\n${data.archivo}`);
-                    // Descarga directa en celular
-                    const link = document.createElement('a');
-                    link.href = `/respaldos/${data.archivo}`;
-                    link.download = data.archivo;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
+                    alert(`✅ Respaldo descargado localmente y guardado en el servidor:\n${data.archivo}`);
                 } else {
-                    alert("❌ Error: " + data.error);
+                    alert("⚠️ Respaldo guardado en tu celular, pero el servidor respondió: " + data.error);
                 }
             } catch (e) {
-                alert("❌ Error al guardar el respaldo en el servidor.");
+                alert("⚠️ Respaldo guardado en tu celular. (Sin conexión con el servidor)");
             }
         }
     </script>
