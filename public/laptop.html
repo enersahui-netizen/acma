@@ -87,33 +87,36 @@
 
     <script>
         async function cargarDatos() {
-            try {
-                const res = await fetch('/api/obtener-datos-vivo');
-                const data = await res.json();
+    try {
+        const res = await fetch('/api/obtener-datos-vivo');
+        const data = await res.json();
 
-                document.getElementById('cnt-partidas').innerText = data.partidas.length;
-                document.getElementById('t-partidas').innerHTML = data.partidas.length === 0
-                    ? '<tr><td colspan="3">Sin datos registrados</td></tr>'
-                    : data.partidas.map(p => `<tr><td><b>#${p.auto}</b></td><td>${p.tramo}</td><td>${p.hora}</td></tr>`).join('');
+        // Renderizar Partidas
+        document.getElementById('cnt-partidas').innerText = data.partidas.length;
+        document.getElementById('t-partidas').innerHTML = data.partidas.length === 0
+            ? '<tr><td colspan="3">Sin datos registrados</td></tr>'
+            : data.partidas.map(p => `<tr><td><b>#${p.auto}</b></td><td>${p.tramo}</td><td>${p.hora}</td></tr>`).join('');
 
-                document.getElementById('cnt-llegadas').innerText = data.llegadas.length;
-                document.getElementById('t-llegadas').innerHTML = data.llegadas.length === 0
-                    ? '<tr><td colspan="3">Sin datos registrados</td></tr>'
-                    : data.llegadas.map(l => `<tr><td><b>#${l.auto}</b></td><td>${l.tramo}</td><td>${l.hora}</td></tr>`).join('');
+        // Renderizar Llegadas
+        document.getElementById('cnt-llegadas').innerText = data.llegadas.length;
+        document.getElementById('t-llegadas').innerHTML = data.llegadas.length === 0
+            ? '<tr><td colspan="3">Sin datos registrados</td></tr>'
+            : data.llegadas.map(l => `<tr><td><b>#${l.auto}</b></td><td>${l.tramo}</td><td>${l.hora}</td></tr>`).join('');
 
-                const elemRespaldos = document.getElementById('lista-respaldos');
-                if (data.respaldos && data.respaldos.length > 0) {
-                    elemRespaldos.innerHTML = data.respaldos.map(r => 
-                        `<li><a href="/respaldos/${r}" download>${r}</a></li>`
-                    ).join('');
-                } else {
-                    elemRespaldos.innerHTML = '<li>No hay respaldos todavía.</li>';
-                }
-
-            } catch (e) {
-                console.error("Error cargando datos:", e);
-            }
+        // Renderizar Lista de Archivos Excel Respaldo
+        const elemRespaldos = document.getElementById('lista-respaldos');
+        if (data.respaldos && data.respaldos.length > 0) {
+            elemRespaldos.innerHTML = data.respaldos.map(r => 
+                `<li>📄 <a href="/respaldos/${encodeURIComponent(r)}" download="${r}">${r}</a></li>`
+            ).join('');
+        } else {
+            elemRespaldos.innerHTML = '<li>No hay respaldos todavía.</li>';
         }
+
+    } catch (e) {
+        console.error("Error obteniendo datos en vivo:", e);
+    }
+}
 
         async function limpiarTodo() {
             if (confirm("¿Estás seguro de reiniciar los tiempos de partidas y llegadas?")) {

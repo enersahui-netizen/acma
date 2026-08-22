@@ -124,22 +124,50 @@
             `).join('');
         }
 
-        async function exportarExcel() {
-            if (registrosLocal.length === 0) return alert("No hay registros para exportar.");
-            const tramo = document.getElementById('tramo').value;
+        // Función para descargar localmente en Android y sincronizar con el servidor
+async function exportarExcel() {
+    if (registrosLocal.length === 0) {
+        alert("⚠️ No hay registros en este tramo para exportar.");
+        return;
+    }
 
-            try {
-                const res = await fetch('/api/guardar-respaldo', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tipo: 'partida', tramo, registros: registrosLocal })
-                });
-                const data = await res.json();
-                if (data.ok) alert(`✅ Respaldo generado: ${data.archivo}`);
-            } catch (e) {
-                alert("❌ Error al guardar el respaldo en el servidor.");
-            }
+    const tramo = document.getElementById('tramo').value;
+    const esLlegada = window.location.pathname.includes('llegada');
+    const tipo = esLlegada ? 'llegada' : 'partida';
+
+    try {
+        // 1. Enviar datos al servidor para que aparezca en laptop.html
+        const res = await fetch('/api/guardar-respaldo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                tipo: tipo,
+                tramo: tramo,
+                registros: registrosLocal
+            })
+        });
+
+        const data = await res.json();
+
+        if (data.ok) {
+            alert(`✅ Respaldo guardado en el servidor:\n${data.archivo}`);
+            
+            // 2. Descarga directa automática en la carpeta Descargas del móvil
+            const downloadUrl = `/respaldos/${data.archivo}`;
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = data.archivo;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        } else {
+            alert("❌ Error del servidor: " + (data.error || "No se pudo crear el archivo"));
         }
+    } catch (e) {
+        console.error(e);
+        alert("❌ Error de red al intentar conectar con el servidor.");
+    }
+}
     </script>
 </body>
 </html>
