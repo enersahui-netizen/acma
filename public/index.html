@@ -5,265 +5,79 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ACMA - Toma de Tiempos</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #121212;
-            color: #ffffff;
-            margin: 0;
-            padding: 20px;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .header h2 {
-            margin: 0;
-            font-size: 1.2rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .online-badge {
-            background-color: #16a34a;
-            color: white;
-            font-size: 0.7rem;
-            font-weight: bold;
-            padding: 3px 8px;
-            border-radius: 4px;
-        }
-
-        .reloj {
-            text-align: center;
-            font-size: 2.2rem;
-            font-weight: bold;
-            color: #22c55e;
-            margin: 15px 0 20px 0;
-            font-family: monospace;
-        }
-
-        label {
-            display: block;
-            font-size: 0.8rem;
-            color: #a1a1aa;
-            margin-top: 12px;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-
-        select {
-            width: 100%;
-            padding: 10px;
-            background-color: #18181b;
-            border: 1px solid #3f3f46;
-            color: white;
-            border-radius: 4px;
-            font-size: 0.95rem;
-            box-sizing: border-box;
-        }
-
-        select:focus {
-            outline: 1px solid #22c55e;
-        }
-
-        .btn-largada {
-            width: 100%;
-            background-color: #00ff66;
-            color: #000000;
-            font-weight: bold;
-            font-size: 1.1rem;
-            border: none;
-            padding: 14px;
-            border-radius: 6px;
-            margin-top: 20px;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-exportar {
-            width: 100%;
-            background-color: #ff9900;
-            color: #000000;
-            font-weight: bold;
-            font-size: 0.95rem;
-            border: none;
-            padding: 12px;
-            border-radius: 6px;
-            margin-top: 10px;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .registros-title {
-            font-size: 0.9rem;
-            font-weight: bold;
-            color: #a1a1aa;
-            margin-top: 25px;
-            margin-bottom: 10px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.85rem;
-        }
-
-        th {
-            text-align: left;
-            color: #71717a;
-            padding: 8px 0;
-            border-bottom: 1px solid #27272a;
-            font-weight: normal;
-        }
-
-        td {
-            padding: 10px 0;
-            border-bottom: 1px solid #18181b;
-        }
-
-        .circulo-verde {
-            height: 12px;
-            width: 12px;
-            background-color: #22c55e;
-            border-radius: 50%;
-            display: inline-block;
-        }
+        body { font-family: Arial, sans-serif; background: #f1f5f9; margin: 0; padding: 15px; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: #0f172a; color: white; padding: 12px 15px; border-radius: 8px; margin-bottom: 20px; }
+        .header h1 { margin: 0; font-size: 1.1rem; }
+        .btn-laptop { background: #38bdf8; color: #0f172a; padding: 6px 12px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 0.85rem; }
+        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        label { display: block; margin-top: 10px; font-weight: bold; font-size: 0.9rem; }
+        input, select, button { width: 100%; padding: 10px; margin-top: 5px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; }
+        button { background: #16a34a; color: white; font-weight: bold; border: none; margin-top: 15px; cursor: pointer; }
+        button.llegada { background: #dc2626; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h2>🏁 PARTIDA</h2>
-        <span class="online-badge">ONLINE</span>
+        <h1>🏁 ACMA - REGISTRO DE TIEMPOS</h1>
+        <a class="btn-laptop" href="/laptop">💻 IR A LAPTOP</a>
     </div>
 
-    <!-- RELOJ EN VIVO -->
-    <div class="reloj" id="reloj">00:00:00</div>
+    <div class="card">
+        <h2>Registrar Tiempo</h2>
+        <label for="tipo">Tipo de Registro:</label>
+        <select id="tipo">
+            <option value="partida">🟢 PARTIDA</option>
+            <option value="llegada">🛑 LLEGADA</option>
+        </select>
 
-    <!-- TRAMO ACTUAL -->
-    <label for="tramo">TRAMO ACTUAL (PE):</label>
-    <select id="tramo">
-        <option value="PE-01">PE-01</option>
-        <option value="PE-02">PE-02</option>
-        <option value="PE-03">PE-03</option>
-        <option value="PE-04">PE-04</option>
-    </select>
+        <label for="tramo">Tramo:</label>
+        <input type="text" id="tramo" placeholder="Ej: PE-01">
 
-    <!-- N° VEHÍCULO DESDE LA MATRIZ -->
-    <label for="auto">N° VEHÍCULO:</label>
-    <select id="auto">
-        <option value="">Ej: Selecciona Vehículo...</option>
-    </select>
+        <label for="auto">Número de Auto:</label>
+        <input type="number" id="auto" placeholder="Ej: 105">
 
-    <!-- BOTONES -->
-    <button class="btn-largada" onclick="registrarTiempos()">
-        <span class="circulo-verde"></span> DAR LARGADA
-    </button>
+        <label for="categoria">Categoría (Opcional):</label>
+        <input type="text" id="categoria" placeholder="Ej: Rally 3">
 
-    <button class="btn-exportar" onclick="exportarExcel()">
-        📦 FINALIZAR TRAMO (EXPORTAR .XLSX)
-    </button>
-
-    <!-- REGISTROS DEL TRAMO -->
-    <div class="registros-title">REGISTROS DEL TRAMO</div>
-    <table>
-        <thead>
-            <tr>
-                <th>Auto</th>
-                <th>Tramo</th>
-                <th>Hora</th>
-                <th>Estado</th>
-            </tr>
-        </thead>
-        <tbody id="tabla-registros">
-            <!-- Se llena dinámicamente -->
-        </tbody>
-    </table>
+        <button onclick="enviarRegistro()">GUARDAR Y ENVIAR</button>
+    </div>
 
     <script>
-        // ================= MATRIZ / LISTA DE AUTOS AUTORIZADOS =================
-        // Edita esta lista colocando los números de los 60 autos participantes
-        const matrizAutos = [
-            111, 123, 222, 325, 456, 555, 666, 789, 901, 2222
-            // Agrega aquí el resto de tus números separados por comas
-        ];
-
-        // 1. Cargar selector dinámicamente desde la matriz
-        const selectAuto = document.getElementById('auto');
-        matrizAutos.forEach(numAuto => {
-            const opt = document.createElement('option');
-            opt.value = numAuto;
-            opt.textContent = `#${numAuto}`;
-            selectAuto.appendChild(opt);
-        });
-
-        // 2. Reloj digital en vivo
-        function actualizarReloj() {
-            const ahora = new Date();
-            const h = String(ahora.getHours()).padStart(2, '0');
-            const m = String(ahora.getMinutes()).padStart(2, '0');
-            const s = String(ahora.getSeconds()).padStart(2, '0');
-            document.getElementById('reloj').innerText = `${h}:${m}:${s}`;
-        }
-        setInterval(actualizarReloj, 1000);
-        actualizarReloj();
-
-        // 3. Registrar largada
-        let registrosLocal = [];
-
-        async function registrarTiempos() {
+        async function enviarRegistro() {
+            const tipo = document.getElementById('tipo').value;
             const tramo = document.getElementById('tramo').value;
             const auto = document.getElementById('auto').value;
+            const categoria = document.getElementById('categoria').value;
 
-            if (!auto) {
-                alert("Por favor selecciona un número de vehículo.");
+            if (!tramo || !auto) {
+                alert("Por favor completa el tramo y el número de auto.");
                 return;
             }
 
             const ahora = new Date();
-            const horaStr = ahora.toTimeString().split(' ')[0] + '.' + String(ahora.getMilliseconds()).padStart(3, '0');
+            const hora = ahora.toTimeString().split(' ')[0] + '.' + String(ahora.getMilliseconds()).padStart(3, '0');
 
-            const nuevoRegistro = { auto: `#${auto}`, tramo, hora: horaStr, estado: 'ENVIADO' };
+            const payload = { tramo, auto, categoria, hora };
+            const endpoint = tipo === 'partida' ? '/api/partida' : '/api/llegada';
 
             try {
-                await fetch('/api/partida', {
+                const res = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ auto, tramo, hora: horaStr })
+                    body: JSON.stringify(payload)
                 });
+
+                if (res.ok) {
+                    alert(`${tipo.toUpperCase()} enviada con éxito a las ${hora}`);
+                    document.getElementById('auto').value = '';
+                } else {
+                    alert("Error al guardar en el servidor.");
+                }
             } catch (e) {
-                nuevoRegistro.estado = 'PENDIENTE';
+                console.error("Error de red:", e);
+                alert("No se pudo conectar con el servidor.");
             }
-
-            registrosLocal.unshift(nuevoRegistro);
-            renderTabla();
-            document.getElementById('auto').value = '';
-        }
-
-        function renderTabla() {
-            const tbody = document.getElementById('tabla-registros');
-            tbody.innerHTML = registrosLocal.map(r => `
-                <tr>
-                    <td><b>${r.auto}</b></td>
-                    <td>${r.tramo}</td>
-                    <td>${r.hora}</td>
-                    <td style="color: #22c55e;">${r.estado}</td>
-                </tr>
-            `).join('');
-        }
-
-        function exportarExcel() {
-            alert("Exportando registros del tramo...");
         }
     </script>
 </body>
