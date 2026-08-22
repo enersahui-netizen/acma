@@ -3,82 +3,115 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ACMA - Toma de Tiempos</title>
+    <title>Dashboard Laptop - Director de Carrera</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #f1f5f9; margin: 0; padding: 15px; }
-        .header { display: flex; justify-content: space-between; align-items: center; background: #0f172a; color: white; padding: 12px 15px; border-radius: 8px; margin-bottom: 20px; }
-        .header h1 { margin: 0; font-size: 1.1rem; }
-        .btn-laptop { background: #38bdf8; color: #0f172a; padding: 6px 12px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 0.85rem; }
-        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 15px; }
-        label { display: block; margin-top: 10px; font-weight: bold; font-size: 0.9rem; }
-        input, select, button { width: 100%; padding: 10px; margin-top: 5px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; }
-        button { background: #16a34a; color: white; font-weight: bold; border: none; margin-top: 15px; cursor: pointer; }
-        button.llegada { background: #dc2626; }
+        body { font-family: Arial, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #334155; padding-bottom: 15px; margin-bottom: 20px; }
+        h1 { color: #38bdf8; margin: 0; font-size: 1.5rem; }
+        .btn-inicio { background: #334155; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-weight: bold; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: #1e293b; border-radius: 10px; padding: 15px; border: 1px solid #334155; }
+        .card h2 { margin-top: 0; font-size: 1.1rem; display: flex; justify-content: space-between; }
+        .badge-partida { color: #4ade80; }
+        .badge-llegada { color: #f43f5e; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
+        th, td { text-align: left; padding: 8px; border-bottom: 1px solid #334155; }
+        th { background: #0f172a; color: #94a3b8; }
+        tr:nth-child(even) { background: #182234; }
+        .respaldos { margin-top: 20px; }
+        .btn-descargar { background: #0284c7; color: white; padding: 4px 8px; border-radius: 4px; text-decoration: none; font-size: 0.8rem; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1>🏁 ACMA - REGISTRO DE TIEMPOS</h1>
-        <a class="btn-laptop" href="/laptop">💻 IR A LAPTOP</a>
+        <h1>💻 CONTROL EN VIVO - DIRECTOR DE CARRERA</h1>
+        <a class="btn-inicio" href="/">📱 IR A INICIO</a>
     </div>
 
-    <div class="card">
-        <h2>Registrar Tiempo</h2>
-        <label for="tipo">Tipo de Registro:</label>
-        <select id="tipo">
-            <option value="partida">🟢 PARTIDA</option>
-            <option value="llegada">🛑 LLEGADA</option>
-        </select>
+    <div class="grid">
+        <div class="card">
+            <h2 class="badge-partida">🟢 PARTIDAS <span id="cant-partidas">0</span></h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Auto</th>
+                        <th>Tramo</th>
+                        <th>Categoría</th>
+                        <th>Hora</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-partidas">
+                    <tr><td colspan="4">Cargando...</td></tr>
+                </tbody>
+            </table>
+        </div>
 
-        <label for="tramo">Tramo:</label>
-        <input type="text" id="tramo" placeholder="Ej: PE-01">
+        <div class="card">
+            <h2 class="badge-llegada">🛑 LLEGADAS <span id="cant-llegadas">0</span></h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Auto</th>
+                        <th>Tramo</th>
+                        <th>Hora</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-llegadas">
+                    <tr><td colspan="3">Cargando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 
-        <label for="auto">Número de Auto:</label>
-        <input type="number" id="auto" placeholder="Ej: 105">
-
-        <label for="categoria">Categoría (Opcional):</label>
-        <input type="text" id="categoria" placeholder="Ej: Rally 3">
-
-        <button onclick="enviarRegistro()">GUARDAR Y ENVIAR</button>
+    <div class="card respaldos">
+        <h2>📦 RESPALDOS EXCEL EN EL SERVIDOR (.XLSX)</h2>
+        <ul id="lista-archivos">
+            <li>Buscando respaldos...</li>
+        </ul>
     </div>
 
     <script>
-        async function enviarRegistro() {
-            const tipo = document.getElementById('tipo').value;
-            const tramo = document.getElementById('tramo').value;
-            const auto = document.getElementById('auto').value;
-            const categoria = document.getElementById('categoria').value;
-
-            if (!tramo || !auto) {
-                alert("Por favor completa el tramo y el número de auto.");
-                return;
-            }
-
-            const ahora = new Date();
-            const hora = ahora.toTimeString().split(' ')[0] + '.' + String(ahora.getMilliseconds()).padStart(3, '0');
-
-            const payload = { tramo, auto, categoria, hora };
-            const endpoint = tipo === 'partida' ? '/api/partida' : '/api/llegada';
-
+        async function cargarDatos() {
             try {
-                const res = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
+                const res = await fetch('/api/obtener-datos-vivo');
+                const data = await res.json();
 
-                if (res.ok) {
-                    alert(`${tipo.toUpperCase()} enviada con éxito a las ${hora}`);
-                    document.getElementById('auto').value = '';
-                } else {
-                    alert("Error al guardar en el servidor.");
-                }
+                document.getElementById('cant-partidas').innerText = data.partidas.length;
+                document.getElementById('tabla-partidas').innerHTML = data.partidas.length === 0 
+                    ? '<tr><td colspan="4">Sin datos registrados</td></tr>'
+                    : data.partidas.map(p => `<tr><td><b>#${p.auto}</b></td><td>${p.tramo}</td><td>${p.categoria||'-'}</td><td>${p.hora}</td></tr>`).join('');
+
+                document.getElementById('cant-llegadas').innerText = data.llegadas.length;
+                document.getElementById('tabla-llegadas').innerHTML = data.llegadas.length === 0 
+                    ? '<tr><td colspan="3">Sin datos registrados</td></tr>'
+                    : data.llegadas.map(l => `<tr><td><b>#${l.auto}</b></td><td>${l.tramo}</td><td>${l.hora}</td></tr>`).join('');
+
             } catch (e) {
-                console.error("Error de red:", e);
-                alert("No se pudo conectar con el servidor.");
+                console.error("Error al cargar datos en vivo:", e);
             }
         }
+
+        async function cargarRespaldos() {
+            try {
+                const res = await fetch('/api/lista-respaldos');
+                const archivos = await res.json();
+
+                document.getElementById('lista-archivos').innerHTML = archivos.length === 0 
+                    ? '<li>No hay respaldos todavía.</li>'
+                    : archivos.map(a => `<li style="margin-bottom: 5px;">📄 <b>${a}</b> <a class="btn-descargar" href="/api/descargar-respaldo/${a}">Descargar</a></li>`).join('');
+            } catch (e) {
+                console.error("Error respaldos:", e);
+            }
+        }
+
+        setInterval(() => {
+            cargarDatos();
+            cargarRespaldos();
+        }, 3000);
+
+        cargarDatos();
+        cargarRespaldos();
     </script>
 </body>
 </html>
