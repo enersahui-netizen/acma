@@ -34,18 +34,24 @@ function inicializarBD() {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
+    db.run(`CREATE TABLE IF NOT EXISTS participantes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        auto TEXT UNIQUE NOT NULL,
+        piloto TEXT,
+        copiloto TEXT,
+        categoria TEXT,
+        representante TEXT,
+        ciudad TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
+
     db.run(`CREATE TABLE IF NOT EXISTS registros (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         tipo TEXT NOT NULL,
         auto TEXT NOT NULL,
         tramo TEXT NOT NULL,
         hora TEXT NOT NULL,
-        categoria TEXT,
-        piloto TEXT,
-        copiloto TEXT,
         juez TEXT,
-        representante TEXT,
-        ciudad TEXT,
         enviado BOOLEAN DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
@@ -63,7 +69,7 @@ function inicializarBD() {
     // Crear usuario admin por defecto si no existe
     db.get("SELECT * FROM usuarios WHERE username = 'admin'", (err, row) => {
         if (!row) {
-            const hash = bcrypt.hashSync('721034', 10);
+            const hash = bcrypt.hashSync('admin123', 10);
             db.run("INSERT INTO usuarios (username, password_hash, rol) VALUES (?, ?, ?)", 
                 ['admin', hash, 'director'], (err) => {
                     if (!err) console.log("✅ Usuario admin creado (pass: admin123)");
@@ -114,6 +120,10 @@ app.get('/login', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
+app.get('/registro-participantes', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'registro-participantes.html'));
+});
+
 // ================= ENDPOINTS DE AUTENTICACIÓN =================
 
 // Login
@@ -145,36 +155,64 @@ app.post('/api/verificar-token', verificarToken, (req, res) => {
 
 // ================= ENDPOINTS API =================
 
-// Registrar una Partida
-app.post('/api/partida', (req, res) => {
-    const { auto, tramo, categoria, piloto, copiloto, juez, representante, ciudad, hora } = req.body;
+// Registrar Participantes (desde CSV)
+app.post('/api/participantes-bulk', (req, res) => {
+    const { participantes } = req.body;
 
-    if (!auto || !tramo) {
-        return res.status(400).json({ ok: false, error: "Auto y tramo requeridos" });
+    if (!Array.isArray(participantes) || participantes.length === 0) {
+        return res.status(400).json({ ok: false, error: "Array de participantes requerido" });
     }
 
-    const horaRegistro = hora || new Date().toLocaleTimeString('es-PE', { hour12: false }) + '.' + new Date().getMilliseconds().toString().padStart(3, '0');
+    let registrados = 0;
+    let errores = 0;
 
-    db.run(
-        `INSERT INTO registros (tipo, auto, tramo, hora, categoria, piloto, copiloto, juez, representante, ciudad) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        ['partida', auto, tramo, horaRegistro, categoria, piloto, copiloto, juez, representante, ciudad],
-        function(err) {
-            if (err) {
-                console.error(err);
-                return res.status(500).json({ ok: false, error: "Error al registrar" });
+    participantes.forEach(p => {
+        db.run(
+            `INSERT OR REPLACE INTO participantes (auto, piloto, copiloto, categoria, representante, ciudad) 
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [p.auto, p.piloto || '', p.copiloto || '', p.categoria || '', p.representante || '', p.ciudad || ''],
+            (err) => {
+                if (err) errores++;
+                else registrados++;
             }
-            
-            const registro = { id: this.lastID, tipo: 'partida', auto, tramo, hora: horaRegistro, categoria, piloto, copiloto, juez, representante, ciudad };
-            notificarClientes({ evento: 'nueva_partida', datos: registro });
-            res.json({ ok: true, mensaje: "Partida registrada", id: this.lastID });
-        }
-    );
+        );
+    });
+
+    setTimeout(() => {
+        res.json({ ok: true, mensaje: `Registrados: ${registrados}, Errores: ${errores}` });
+    }, 500);
 });
 
-// Registrar una Llegada
-app.post('/api/llegada', (req, res) => {
-    const { auto, tramo, piloto, copiloto, juez, representante, ciudad, hora } = req.body;
+// Obtener participante por auto
+app.get('/api/participante/:auto', (req, res) => {
+    db.get("SELECT * FROM participantes WHERE auto = ?", [req.params.auto], (err, row) => {
+        if (err || !row) {
+            return res.status(404).json({ ok: false, error: "Participante no encontrado" });
+        }
+        res.json({ ok: true, participante: row });
+    });
+});
+
+// Obtener lista de participantes
+app.get('/api/participantes', (req, res) => {
+    db.all("SELECT * FROM participantes ORDER BY auto", (err, rows) => {
+        res.json({ ok: true, participantes: rows || [] });
+    });
+});
+
+// Limpiar participantes
+app.delete('/api/participantes', (req, res) => {
+    db.run("DELETE FROM participantes", (err) => {
+        if (err) {
+            return res.status(500).json({ ok: false, error: "Error al limpiar" });
+        }
+        res.json({ ok: true, mensaje: "Participantes eliminados" });
+    });
+});
+
+// Registrar una Partida (VERSIÓN SIMPLIFICADA)
+app.post('/api/partida', (req, res) => {
+    const { auto, tramo, juez, hora } = req.body;
 
     if (!auto || !tramo) {
         return res.status(400).json({ ok: false, error: "Auto y tramo requeridos" });
@@ -182,21 +220,69 @@ app.post('/api/llegada', (req, res) => {
 
     const horaRegistro = hora || new Date().toLocaleTimeString('es-PE', { hour12: false }) + '.' + new Date().getMilliseconds().toString().padStart(3, '0');
 
-    db.run(
-        `INSERT INTO registros (tipo, auto, tramo, hora, piloto, copiloto, juez, representante, ciudad) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        ['llegada', auto, tramo, horaRegistro, piloto, copiloto, juez, representante, ciudad],
-        function(err) {
-            if (err) {
-                console.error(err);
-                return res.status(500).json({ ok: false, error: "Error al registrar" });
+    // Obtener datos del participante
+    db.get("SELECT * FROM participantes WHERE auto = ?", [auto], (err, participante) => {
+        db.run(
+            `INSERT INTO registros (tipo, auto, tramo, hora, juez) 
+             VALUES (?, ?, ?, ?, ?)`,
+            ['partida', auto, tramo, horaRegistro, juez || ''],
+            function(err) {
+                if (err) {
+                    console.error(err);
+                    return res.status(500).json({ ok: false, error: "Error al registrar" });
+                }
+                
+                const registro = { 
+                    id: this.lastID, 
+                    tipo: 'partida', 
+                    auto, 
+                    tramo, 
+                    hora: horaRegistro, 
+                    piloto: participante?.piloto || '-',
+                    ciudad: participante?.ciudad || '-'
+                };
+                notificarClientes({ evento: 'nueva_partida', datos: registro });
+                res.json({ ok: true, mensaje: "Partida registrada", id: this.lastID });
             }
+        );
+    });
+});
 
-            const registro = { id: this.lastID, tipo: 'llegada', auto, tramo, hora: horaRegistro, piloto, copiloto, juez, representante, ciudad };
-            notificarClientes({ evento: 'nueva_llegada', datos: registro });
-            res.json({ ok: true, mensaje: "Llegada registrada", id: this.lastID });
-        }
-    );
+// Registrar una Llegada (VERSIÓN SIMPLIFICADA)
+app.post('/api/llegada', (req, res) => {
+    const { auto, tramo, juez, hora } = req.body;
+
+    if (!auto || !tramo) {
+        return res.status(400).json({ ok: false, error: "Auto y tramo requeridos" });
+    }
+
+    const horaRegistro = hora || new Date().toLocaleTimeString('es-PE', { hour12: false }) + '.' + new Date().getMilliseconds().toString().padStart(3, '0');
+
+    // Obtener datos del participante
+    db.get("SELECT * FROM participantes WHERE auto = ?", [auto], (err, participante) => {
+        db.run(
+            `INSERT INTO registros (tipo, auto, tramo, hora, juez) 
+             VALUES (?, ?, ?, ?, ?)`,
+            ['llegada', auto, tramo, horaRegistro, juez || ''],
+            function(err) {
+                if (err) {
+                    console.error(err);
+                    return res.status(500).json({ ok: false, error: "Error al registrar" });
+                }
+
+                const registro = { 
+                    id: this.lastID, 
+                    tipo: 'llegada', 
+                    auto, 
+                    tramo, 
+                    hora: horaRegistro,
+                    piloto: participante?.piloto || '-'
+                };
+                notificarClientes({ evento: 'nueva_llegada', datos: registro });
+                res.json({ ok: true, mensaje: "Llegada registrada", id: this.lastID });
+            }
+        );
+    });
 });
 
 // Obtener datos en vivo
