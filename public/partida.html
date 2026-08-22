@@ -3,114 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Juez de Partida</title>
+    <title>Juez de Partida - ACMA</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; background: #121212; color: #fff; padding: 20px; }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 10px; }
-        .reloj { font-size: 2.2rem; color: #00ff66; text-align: center; margin: 15px 0; font-family: monospace; }
-        .estado { padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
-        .online { background: #28a745; color: white; }
-        .offline { background: #dc3545; color: white; }
-        .form-group { margin-bottom: 12px; }
-        label { display: block; color: #aaa; margin-bottom: 4px; }
-        input, select { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #444; background: #222; color: white; box-sizing: border-box; }
-        .btn-partida { width: 100%; padding: 15px; background: #00ff66; color: #000; font-weight: bold; font-size: 1.2rem; border: none; border-radius: 5px; margin-top: 10px; cursor: pointer; }
-        .btn-finalizar { width: 100%; padding: 12px; background: #ff9900; color: #000; font-weight: bold; font-size: 1rem; border: none; border-radius: 5px; margin-top: 15px; cursor: pointer; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #121212; color: #fff; padding: 15px; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 12px; margin-bottom: 15px; }
+        .header h2 { font-size: 1.2rem; margin: 0; }
+        .estado { padding: 6px 12px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+        .online { background: #28a745; }
+        .offline { background: #dc3545; }
+        .reloj { font-size: 2rem; color: #00ff66; text-align: center; margin: 15px 0; font-family: monospace; font-weight: bold; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+        .form-grid.full { grid-template-columns: 1fr; }
+        .form-group { display: flex; flex-direction: column; }
+        label { color: #aaa; margin-bottom: 4px; font-size: 0.85rem; font-weight: bold; }
+        input, select { padding: 8px; border-radius: 5px; border: 1px solid #444; background: #222; color: white; font-size: 0.95rem; }
+        input:focus, select:focus { outline: none; border-color: #00ff66; box-shadow: 0 0 5px rgba(0, 255, 102, 0.3); }
+        .btn-partida { width: 100%; padding: 12px; background: #00ff66; color: #000; font-weight: bold; font-size: 1rem; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; transition: all 0.2s; }
+        .btn-partida:hover { background: #00dd55; transform: translateY(-2px); }
+        .btn-finalizar { width: 100%; padding: 10px; background: #ff9900; color: #000; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; margin-top: 8px; }
+        .btn-finalizar:hover { background: #ffaa00; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
         th, td { text-align: left; padding: 8px; border-bottom: 1px solid #333; }
-        th { color: #888; }
+        th { color: #888; background: #1a1a1a; }
+        tr:hover { background: #1a1a1a; }
+        h3 { margin-top: 20px; margin-bottom: 10px; font-size: 1rem; color: #00ff66; }
+        .info-box { background: #1a1a1a; border-left: 3px solid #00ff66; padding: 10px; margin-bottom: 15px; font-size: 0.9rem; }
+        .info-box strong { color: #00ff66; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h2>🏁 PARTIDA</h2>
+        <h2>🟢 JUEZ DE PARTIDA</h2>
         <span id="indicador-estado" class="estado offline">OFFLINE</span>
     </div>
 
     <div class="reloj" id="reloj-oficial">00:00:00</div>
 
-    <div class="form-group">
-        <label>TRAMO ACTUAL (PE):</label>
-        <select id="tramo">
-            <option value="PE-01">PE-01</option>
-            <option value="PE-02">PE-02</option>
-            <option value="PE-03">PE-03</option>
-            <option value="PE-04">PE-04</option>
-            <option value="PE-05">PE-05</option>
-        </select>
+    <div class="info-box">
+        <strong>ℹ️ Instrucciones:</strong> Completa todos los campos del vehículo al momento de la largada. Los datos se sincronizarán automáticamente.
     </div>
 
-    <div class="form-group">
-        <label>N° VEHÍCULO:</label>
-        <input type="number" id="num_auto" placeholder="Ej: 402">
-    </div>
+    <form onsubmit="darLargada(event)">
+        <div class="form-grid">
+            <div class="form-group">
+                <label>N° VEHÍCULO *</label>
+                <input type="number" id="num_auto" placeholder="Ej: 402" required>
+            </div>
+            <div class="form-group">
+                <label>TRAMO (PE) *</label>
+                <select id="tramo" required>
+                    <option value="">-- Seleccionar --</option>
+                    <option value="PE-01">PE-01</option>
+                    <option value="PE-02">PE-02</option>
+                    <option value="PE-03">PE-03</option>
+                    <option value="PE-04">PE-04</option>
+                    <option value="PE-05">PE-05</option>
+                </select>
+            </div>
+        </div>
 
-    <div class="form-group">
-        <label>CATEGORÍA:</label>
-        <select id="categoria">
-            <option value="General / Libre">General / Libre</option>
-            <option value="Turismo 1600cc">Turismo 1600cc</option>
-            <option value="S1600">S1600</option>
-        </select>
-    </div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>CATEGORÍA *</label>
+                <select id="categoria" required>
+                    <option value="">-- Seleccionar --</option>
+                    <option value="General / Libre">General / Libre</option>
+                    <option value="Turismo 1600cc">Turismo 1600cc</option>
+                    <option value="S1600">S1600</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>JUEZ *</label>
+                <input type="text" id="juez" placeholder="Nombre del juez" required>
+            </div>
+        </div>
 
-    <button class="btn-partida" onclick="darLargada()">🟢 DAR LARGADA</button>
-    <button class="btn-finalizar" onclick="finalizarYLimpiarTramo()">📦 FINALIZAR TRAMO (EXPORTAR .XLSX)</button>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>PILOTO *</label>
+                <input type="text" id="piloto" placeholder="Nombre piloto" required>
+            </div>
+            <div class="form-group">
+                <label>COPILOTO</label>
+                <input type="text" id="copiloto" placeholder="Nombre copiloto (opcional)">
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label>REPRESENTANTE *</label>
+                <input type="text" id="representante" placeholder="Empresa/Equipo" required>
+            </div>
+            <div class="form-group">
+                <label>CIUDAD *</label>
+                <input type="text" id="ciudad" placeholder="Ciudad de origen" required>
+            </div>
+        </div>
+
+        <button type="submit" class="btn-partida">🟢 DAR LARGADA</button>
+        <button type="button" class="btn-finalizar" onclick="finalizarYLimpiarTramo()">📦 FINALIZAR TRAMO (EXPORTAR .XLSX)</button>
+    </form>
 
     <h3>REGISTROS DEL TRAMO</h3>
     <table>
         <thead>
-            <tr><th>Auto</th><th>Tramo</th><th>Hora</th><th>Estado</th></tr>
+            <tr>
+                <th>Auto</th>
+                <th>Piloto</th>
+                <th>Tramo</th>
+                <th>Hora</th>
+                <th>Estado</th>
+            </tr>
         </thead>
-        <tbody id="historial-body"></tbody>
+        <tbody id="historial-body">
+            <tr><td colspan="5">Sin registros</td></tr>
+        </tbody>
     </table>
 
     <script>
-        const URL_SERVIDOR = "https://acma-baf9.onrender.com";
+        const URL_SERVIDOR = window.location.origin;
         let historialLocal = JSON.parse(localStorage.getItem('partidas_local') || "[]");
+        let intentosReconexion = 0;
+        const MAX_INTENTOS = 5;
 
         function actualizarReloj() {
             document.getElementById('reloj-oficial').innerText = new Date().toTimeString().split(' ')[0];
         }
-        setInterval(actualizarReloj, 1000); actualizarReloj();
+        setInterval(actualizarReloj, 1000);
+        actualizarReloj();
 
         async function comprobarConexion() {
             const badge = document.getElementById('indicador-estado');
             try {
-                const res = await fetch(`${URL_SERVIDOR}/`, { method: 'HEAD' });
-                if (res.ok) { badge.innerText = "ONLINE"; badge.className = "estado online"; sincronizarPendientes(); } 
-                else throw new Error();
-            } catch (e) { badge.innerText = "OFFLINE"; badge.className = "estado offline"; }
+                const res = await fetch(`${URL_SERVIDOR}/`, { method: 'HEAD', timeout: 5000 });
+                if (res.ok) {
+                    badge.innerText = "ONLINE";
+                    badge.className = "estado online";
+                    intentosReconexion = 0;
+                    await sincronizarPendientes();
+                } else throw new Error();
+            } catch (e) {
+                badge.innerText = "OFFLINE";
+                badge.className = "estado offline";
+                intentosReconexion++;
+            }
         }
 
-        async function darLargada() {
+        async function darLargada(e) {
+            e.preventDefault();
+
             const auto = document.getElementById('num_auto').value.trim();
             const tramo = document.getElementById('tramo').value;
             const categoria = document.getElementById('categoria').value;
+            const juez = document.getElementById('juez').value.trim();
+            const piloto = document.getElementById('piloto').value.trim();
+            const copiloto = document.getElementById('copiloto').value.trim();
+            const representante = document.getElementById('representante').value.trim();
+            const ciudad = document.getElementById('ciudad').value.trim();
 
-            if (!auto) return alert("Por favor, ingrese el número de vehículo.");
+            if (!auto || !tramo || !categoria || !juez || !piloto || !representante || !ciudad) {
+                alert("⚠️ Completa todos los campos requeridos (*)");
+                return;
+            }
 
-            // Validar si el vehículo ya fue registrado en el mismo tramo
+            // Validar duplicado
             const yaExiste = historialLocal.some(item => item.auto === auto && item.tramo === tramo);
             if (yaExiste) {
-                const confirmarDuplicado = confirm(`⚠️ ALERTA: El auto #${auto} ya fue registrado en la partida del tramo ${tramo}.\n¿Deseas registrarlo nuevamente?`);
-                if (!confirmarDuplicado) return;
+                if (!confirm(`⚠️ Auto #${auto} ya fue registrado en ${tramo}.\n¿Registrar nuevamente?`)) return;
             }
+
+            const hora = new Date().toLocaleTimeString('es-PE', { hour12: false }) + '.' + new Date().getMilliseconds().toString().padStart(3, '0');
 
             const registro = {
                 id: Date.now(),
                 auto: auto,
                 tramo: tramo,
                 categoria: categoria,
-                hora: new Date().toLocaleTimeString('es-PE', { hour12: false }) + '.' + new Date().getMilliseconds().toString().padStart(3, '0'),
+                juez: juez,
+                piloto: piloto,
+                copiloto: copiloto,
+                representante: representante,
+                ciudad: ciudad,
+                hora: hora,
+                tipo: 'partida',
                 enviado: false
             };
 
             historialLocal.unshift(registro);
             guardarYRenderizar();
-            document.getElementById('num_auto').value = '';
+            document.querySelector('form').reset();
+            document.getElementById('num_auto').focus();
             await sincronizarPendientes();
         }
 
@@ -124,7 +209,10 @@
                             body: JSON.stringify(item)
                         });
                         if (res.ok) item.enviado = true;
-                    } catch (e) { break; }
+                    } catch (e) {
+                        console.log("Sincronización fallida, reintentando...");
+                        break;
+                    }
                 }
             }
             guardarYRenderizar();
@@ -133,56 +221,77 @@
         function guardarYRenderizar() {
             localStorage.setItem('partidas_local', JSON.stringify(historialLocal));
             const tbody = document.getElementById('historial-body');
-            tbody.innerHTML = '';
-            historialLocal.forEach(item => {
-                tbody.innerHTML += `<tr><td>#${item.auto}</td><td>${item.tramo}</td><td>${item.hora}</td><td>${item.enviado ? '✅' : '⏳'}</td></tr>`;
-            });
+            
+            if (historialLocal.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5">Sin registros</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = historialLocal.map(item => `
+                <tr>
+                    <td><strong>#${item.auto}</strong></td>
+                    <td>${item.piloto}</td>
+                    <td>${item.tramo}</td>
+                    <td>${item.hora}</td>
+                    <td>${item.enviado ? '✅' : '⏳'}</td>
+                </tr>
+            `).join('');
         }
 
         async function finalizarYLimpiarTramo() {
-            if (historialLocal.length === 0) return alert("No hay registros en este tramo.");
-            
-            const tramo = document.getElementById('tramo').value;
-            const confirmacion = confirm(`¿Estás seguro de finalizar el tramo ${tramo}? Se guardará el Excel (.xlsx) y se limpiarán los datos locales.`);
-            if (!confirmacion) return;
+            if (historialLocal.length === 0) {
+                alert("No hay registros en este tramo.");
+                return;
+            }
 
-            const nombreArchivo = `${tramo.toLowerCase()}-partida.xlsx`;
+            const tramo = document.getElementById('tramo').value || 'general';
+            if (!confirm(`¿Finalizar tramo ${tramo}? Se exportará el Excel y se limpiarán los datos.`)) return;
 
+            const nombreArchivo = `${tramo.toLowerCase()}-partida-${new Date().getTime()}.xlsx`;
             const datosExcel = historialLocal.map(item => ({
                 "Auto": item.auto,
-                "Categoría": item.categoria || '',
+                "Piloto": item.piloto,
+                "Copiloto": item.copiloto || '',
+                "Categoría": item.categoria,
                 "Tramo": item.tramo,
-                "Hora Partida": item.hora,
-                "Estado": item.enviado ? 'Enviado' : 'Pendiente'
+                "Hora": item.hora,
+                "Juez": item.juez,
+                "Representante": item.representante,
+                "Ciudad": item.ciudad
             }));
 
             const worksheet = XLSX.utils.json_to_sheet(datosExcel);
+            worksheet['!cols'] = [
+                { wch: 8 }, { wch: 16 }, { wch: 16 }, { wch: 15 }, { wch: 8 },
+                { wch: 12 }, { wch: 16 }, { wch: 18 }, { wch: 15 }
+            ];
+
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Partidas");
-
-            // 1. Descarga Local (.xlsx)
             XLSX.writeFile(workbook, nombreArchivo);
 
-            // 2. Envío de respaldo en Base64 al servidor
+            // Respaldo en servidor
             const excelBase64 = XLSX.write(workbook, { bookType: 'xlsx', type: 'base64' });
-
             try {
                 await fetch(`${URL_SERVIDOR}/api/guardar-excel-respaldo`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ nombreArchivo, contenidoBase64: excelBase64 })
                 });
-            } catch (e) { console.log("Servidor offline"); }
+            } catch (e) {
+                console.log("Respaldo no disponible (offline)");
+            }
 
-            // 3. Limpiar registros locales
             historialLocal = [];
             localStorage.removeItem('partidas_local');
             guardarYRenderizar();
-            alert(`Tramo ${tramo} finalizado correctamente. Se descargó el archivo ${nombreArchivo}.`);
+            alert(`✅ Tramo ${tramo} finalizado. Se descargó ${nombreArchivo}`);
         }
 
         setInterval(comprobarConexion, 5000);
-        guardarYRenderizar(); comprobarConexion();
+        guardarYRenderizar();
+        comprobarConexion();
     </script>
+
 </body>
 </html>
