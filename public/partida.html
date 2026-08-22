@@ -160,7 +160,19 @@
         <div class="reloj" id="reloj-oficial">00:00:00</div>
 
         <div class="info">
-            <strong>⚡ RÁPIDO:</strong> Solo ingresa nº auto y presiona LARGADA
+            <strong>⚡ RÁPIDO:</strong> Selecciona tramo, ingresa nº auto y presiona LARGADA
+        </div>
+
+        <div style="margin-bottom: 15px;">
+            <label style="color: #aaa; margin-bottom: 5px; display: block;">TRAMO:</label>
+            <select id="tramo" style="width: 100%; padding: 12px; background: #1a1a1a; color: #00ff66; border: 2px solid #00ff66; border-radius: 6px; font-size: 1.1rem; font-weight: bold;">
+                <option value="">-- Seleccionar Tramo --</option>
+                <option value="PE-01">PE-01</option>
+                <option value="PE-02">PE-02</option>
+                <option value="PE-03">PE-03</option>
+                <option value="PE-04">PE-04</option>
+                <option value="PE-05">PE-05</option>
+            </select>
         </div>
 
         <input type="number" id="num_auto" class="input-grande" placeholder="Nº AUTO" inputmode="numeric" autofocus>
@@ -202,7 +214,14 @@
 
         async function darLargada() {
             const auto = document.getElementById('num_auto').value.trim();
+            const tramo = document.getElementById('tramo').value.trim();
             
+            if (!tramo) {
+                alert("Selecciona un tramo");
+                document.getElementById('tramo').focus();
+                return;
+            }
+
             if (!auto) {
                 alert("Ingresa el número de auto");
                 document.getElementById('num_auto').focus();
@@ -212,12 +231,15 @@
             // Validar que exista el participante
             try {
                 const res = await fetch(`${URL_SERVIDOR}/api/participante/${auto}`);
-                if (!res.ok) {
-                    alert(`⚠️ Auto #${auto} no está registrado.\n\nVe a REGISTRO DE PARTICIPANTES para agregarlo.`);
+                const data = await res.json();
+                if (!data.ok || !data.participante) {
+                    alert(`⚠️ Auto #${auto} NO ENCONTRADO\n\nRegístralo en:\nREGISTRO DE PARTICIPANTES`);
+                    document.getElementById('num_auto').value = '';
+                    document.getElementById('num_auto').focus();
                     return;
                 }
             } catch (e) {
-                alert("No se puede verificar el auto (offline)");
+                console.log("Verificación offline");
             }
 
             const hora = new Date().toLocaleTimeString('es-PE', { hour12: false }) + '.' + new Date().getMilliseconds().toString().padStart(3, '0');
@@ -225,6 +247,7 @@
             const registro = {
                 id: Date.now(),
                 auto: auto,
+                tramo: tramo,
                 hora: hora,
                 tipo: 'partida',
                 enviado: false
@@ -241,26 +264,29 @@
             for (let item of historialLocal) {
                 if (!item.enviado) {
                     try {
-                        // Obtener datos del participante
-                        const resParticipante = await fetch(`${URL_SERVIDOR}/api/participante/${item.auto}`);
-                        const datosParticipante = await resParticipante.json();
-                        
-                        // Determinar tramo de la URL o usar default
-                        const urlParams = new URLSearchParams(window.location.search);
-                        const tramo = urlParams.get('tramo') || 'PE-01';
-
                         const res = await fetch(`${URL_SERVIDOR}/api/partida`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 auto: item.auto,
-                                tramo: tramo,
+                                tramo: item.tramo,
                                 hora: item.hora,
                                 juez: 'Juez de Partida'
                             })
                         });
-                        if (res.ok) item.enviado = true;
+                        
+                        const data = await res.json();
+                        
+                        if (data.ok) {
+                            item.enviado = true;
+                        } else {
+                            // Error del servidor - mostrar y eliminar del historial
+                            alert("❌ " + data.error);
+                            historialLocal = historialLocal.filter(h => h.id !== item.id);
+                            break;
+                        }
                     } catch (e) {
+                        console.log("Error de sincronización:", e);
                         break;
                     }
                 }
