@@ -3,174 +3,174 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ACMA - Control de Llegada</title>
-    <!-- Librería XLSX en el cliente para descarga asegurada -->
+    <title>Juez de Llegada</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #121212; color: #ffffff; margin: 0; padding: 20px; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .header h2 { margin: 0; font-size: 1.2rem; color: #ef4444; display: flex; align-items: center; gap: 8px; }
-        .online-badge { background-color: #16a34a; color: white; font-size: 0.7rem; font-weight: bold; padding: 3px 8px; border-radius: 4px; }
-        .reloj { text-align: center; font-size: 2.2rem; font-weight: bold; color: #ef4444; margin: 15px 0 20px 0; font-family: monospace; }
-        label { display: block; font-size: 0.8rem; color: #a1a1aa; margin-top: 12px; margin-bottom: 5px; font-weight: bold; }
-        select { width: 100%; padding: 12px; background-color: #18181b; border: 1px solid #3f3f46; color: white; border-radius: 4px; font-size: 1rem; box-sizing: border-box; }
-        select:focus { outline: 1px solid #ef4444; }
-        .btn-llegada { width: 100%; background-color: #ef4444; color: #ffffff; font-weight: bold; font-size: 1.1rem; border: none; padding: 14px; border-radius: 6px; margin-top: 20px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; }
-        .btn-exportar { width: 100%; background-color: #ff9900; color: #000000; font-weight: bold; font-size: 0.95rem; border: none; padding: 12px; border-radius: 6px; margin-top: 10px; cursor: pointer; }
-        .registros-title { font-size: 0.9rem; font-weight: bold; color: #a1a1aa; margin-top: 25px; margin-bottom: 10px; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-        th { text-align: left; color: #71717a; padding: 8px 0; border-bottom: 1px solid #27272a; font-weight: normal; }
-        td { padding: 10px 0; border-bottom: 1px solid #18181b; }
-        .circulo-rojo { height: 12px; width: 12px; background-color: #ef4444; border-radius: 50%; display: inline-block; }
+        body { font-family: Arial, sans-serif; background: #121212; color: #fff; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        .reloj { font-size: 2.2rem; color: #ff3366; text-align: center; margin: 15px 0; font-family: monospace; }
+        .estado { padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+        .online { background: #28a745; color: white; }
+        .offline { background: #dc3545; color: white; }
+        .form-group { margin-bottom: 12px; }
+        label { display: block; color: #aaa; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #444; background: #222; color: white; box-sizing: border-box; }
+        .btn-llegada { width: 100%; padding: 15px; background: #ff3366; color: #fff; font-weight: bold; font-size: 1.2rem; border: none; border-radius: 5px; margin-top: 10px; cursor: pointer; }
+        .btn-finalizar { width: 100%; padding: 12px; background: #ff9900; color: #000; font-weight: bold; font-size: 1rem; border: none; border-radius: 5px; margin-top: 15px; cursor: pointer; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { text-align: left; padding: 8px; border-bottom: 1px solid #333; }
+        th { color: #888; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h2>🛑 LLEGADA</h2>
-        <span class="online-badge">ONLINE</span>
+        <h2>🏁 LLEGADA</h2>
+        <span id="indicador-estado" class="estado offline">OFFLINE</span>
     </div>
 
-    <div class="reloj" id="reloj">00:00:00</div>
+    <div class="reloj" id="reloj-oficial">00:00:00</div>
 
-    <label for="tramo">TRAMO ACTUAL (PE):</label>
-    <select id="tramo">
-        <option value="PE-01">PE-01</option>
-        <option value="PE-02">PE-02</option>
-        <option value="PE-03">PE-03</option>
-        <option value="PE-04">PE-04</option>
-    </select>
+    <div class="form-group">
+        <label>TRAMO ACTUAL (PE):</label>
+        <select id="tramo">
+            <option value="PE-01">PE-01</option>
+            <option value="PE-02">PE-02</option>
+            <option value="PE-03">PE-03</option>
+            <option value="PE-04">PE-04</option>
+            <option value="PE-05">PE-05</option>
+        </select>
+    </div>
 
-    <label for="auto">N° VEHÍCULO:</label>
-    <select id="auto">
-        <option value="">Ej: Selecciona Vehículo...</option>
-    </select>
+    <div class="form-group">
+        <label>N° VEHÍCULO:</label>
+        <input type="number" id="num_auto" placeholder="Ej: 402">
+    </div>
 
-    <button class="btn-llegada" onclick="registrarTiempos()">
-        <span class="circulo-rojo"></span> REGISTRAR LLEGADA
-    </button>
+    <button class="btn-llegada" onclick="registrarLlegada()">🛑 REGISTRAR LLEGADA</button>
+    <button class="btn-finalizar" onclick="finalizarYLimpiarTramo()">📦 FINALIZAR TRAMO (EXPORTAR .XLSX)</button>
 
-    <button class="btn-exportar" onclick="exportarExcel()">
-        📦 FINALIZAR TRAMO (EXPORTAR .XLSX)
-    </button>
-
-    <div class="registros-title">REGISTROS DEL TRAMO</div>
+    <h3>REGISTROS DEL TRAMO</h3>
     <table>
         <thead>
-            <tr>
-                <th>Auto</th>
-                <th>Tramo</th>
-                <th>Hora</th>
-                <th>Estado</th>
-            </tr>
+            <tr><th>Auto</th><th>Tramo</th><th>Hora</th><th>Estado</th></tr>
         </thead>
-        <tbody id="tabla-registros"></tbody>
+        <tbody id="historial-body"></tbody>
     </table>
 
     <script>
-        const matrizAutos = [111, 123, 222, 325, 456, 555, 666, 789, 901, 2222];
-
-        const selectAuto = document.getElementById('auto');
-        matrizAutos.forEach(numAuto => {
-            const opt = document.createElement('option');
-            opt.value = numAuto;
-            opt.textContent = numAuto;
-            selectAuto.appendChild(opt);
-        });
+        const URL_SERVIDOR = "https://acma-baf9.onrender.com";
+        let historialLocal = JSON.parse(localStorage.getItem('llegadas_local') || "[]");
 
         function actualizarReloj() {
-            const ahora = new Date();
-            const h = String(ahora.getHours()).padStart(2, '0');
-            const m = String(ahora.getMinutes()).padStart(2, '0');
-            const s = String(ahora.getSeconds()).padStart(2, '0');
-            document.getElementById('reloj').innerText = `${h}:${m}:${s}`;
+            document.getElementById('reloj-oficial').innerText = new Date().toTimeString().split(' ')[0];
         }
-        setInterval(actualizarReloj, 1000);
-        actualizarReloj();
+        setInterval(actualizarReloj, 1000); actualizarReloj();
 
-        let registrosLocal = [];
-
-        async function registrarTiempos() {
-            const tramo = document.getElementById('tramo').value;
-            const auto = document.getElementById('auto').value;
-
-            if (!auto) return alert("Por favor selecciona un número de vehículo.");
-
-            const ahora = new Date();
-            const horaStr = ahora.toTimeString().split(' ')[0] + '.' + String(ahora.getMilliseconds()).padStart(3, '0');
-            const nuevoRegistro = { auto: auto, tramo, hora: horaStr, estado: 'ENVIADO' };
-
+        async function comprobarConexion() {
+            const badge = document.getElementById('indicador-estado');
             try {
-                await fetch('/api/llegada', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ auto, tramo, hora: horaStr })
-                });
-            } catch (e) {
-                nuevoRegistro.estado = 'PENDIENTE';
+                const res = await fetch(`${URL_SERVIDOR}/`, { method: 'HEAD' });
+                if (res.ok) { badge.innerText = "ONLINE"; badge.className = "estado online"; sincronizarPendientes(); } 
+                else throw new Error();
+            } catch (e) { badge.innerText = "OFFLINE"; badge.className = "estado offline"; }
+        }
+
+        async function registrarLlegada() {
+            const auto = document.getElementById('num_auto').value.trim();
+            const tramo = document.getElementById('tramo').value;
+
+            if (!auto) return alert("Por favor, ingrese el número de vehículo.");
+
+            // Validar si el vehículo ya fue registrado en el mismo tramo
+            const yaExiste = historialLocal.some(item => item.auto === auto && item.tramo === tramo);
+            if (yaExiste) {
+                const confirmarDuplicado = confirm(`⚠️ ALERTA: El auto #${auto} ya figura en la llegada del tramo ${tramo}.\n¿Deseas registrar otra llegada?`);
+                if (!confirmarDuplicado) return;
             }
 
-            registrosLocal.unshift(nuevoRegistro);
-            renderTabla();
-            document.getElementById('auto').value = '';
+            const registro = {
+                id: Date.now(),
+                auto: auto,
+                tramo: tramo,
+                hora: new Date().toLocaleTimeString('es-PE', { hour12: false }) + '.' + new Date().getMilliseconds().toString().padStart(3, '0'),
+                enviado: false
+            };
+
+            historialLocal.unshift(registro);
+            guardarYRenderizar();
+            document.getElementById('num_auto').value = '';
+            await sincronizarPendientes();
         }
 
-        function renderTabla() {
-            document.getElementById('tabla-registros').innerHTML = registrosLocal.map(r => `
-                <tr>
-                    <td><b>${r.auto}</b></td>
-                    <td>${r.tramo}</td>
-                    <td>${r.hora}</td>
-                    <td style="color: #ef4444;">${r.estado}</td>
-                </tr>
-            `).join('');
+        async function sincronizarPendientes() {
+            for (let item of historialLocal) {
+                if (!item.enviado) {
+                    try {
+                        const res = await fetch(`${URL_SERVIDOR}/api/llegada`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(item)
+                        });
+                        if (res.ok) item.enviado = true;
+                    } catch (e) { break; }
+                }
+            }
+            guardarYRenderizar();
         }
 
-        function descargarExcelLocal(tramo) {
-            const datosExcel = registrosLocal.map(r => ({
-                "Vehículo": String(r.auto).replace('#', '').trim(),
-                "Tramo": r.tramo || tramo,
-                "Hora": r.hora,
-                "Estado": r.estado || 'REGISTRADO'
+        function guardarYRenderizar() {
+            localStorage.setItem('llegadas_local', JSON.stringify(historialLocal));
+            const tbody = document.getElementById('historial-body');
+            tbody.innerHTML = '';
+            historialLocal.forEach(item => {
+                tbody.innerHTML += `<tr><td>#${item.auto}</td><td>${item.tramo}</td><td>${item.hora}</td><td>${item.enviado ? '✅' : '⏳'}</td></tr>`;
+            });
+        }
+
+        async function finalizarYLimpiarTramo() {
+            if (historialLocal.length === 0) return alert("No hay registros en este tramo.");
+            
+            const tramo = document.getElementById('tramo').value;
+            const confirmacion = confirm(`¿Estás seguro de finalizar el tramo ${tramo}? Se guardará el Excel (.xlsx) y se limpiarán los datos locales.`);
+            if (!confirmacion) return;
+
+            const nombreArchivo = `${tramo.toLowerCase()}-llegada.xlsx`;
+
+            const datosExcel = historialLocal.map(item => ({
+                "Auto": item.auto,
+                "Tramo": item.tramo,
+                "Hora Llegada": item.hora,
+                "Estado": item.enviado ? 'Enviado' : 'Pendiente'
             }));
 
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.json_to_sheet(datosExcel);
-            XLSX.utils.book_append_sheet(wb, ws, "LLEGADAS");
+            const worksheet = XLSX.utils.json_to_sheet(datosExcel);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Llegadas");
 
-            const fechaHora = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-            XLSX.writeFile(wb, `LLEGADA_${tramo}_${fechaHora}.xlsx`);
-        }
+            // 1. Descarga Local (.xlsx)
+            XLSX.writeFile(workbook, nombreArchivo);
 
-        async function exportarExcel() {
-            if (registrosLocal.length === 0) {
-                alert("⚠️ No hay registros para exportar.");
-                return;
-            }
+            // 2. Envío de respaldo en Base64 al servidor
+            const excelBase64 = XLSX.write(workbook, { bookType: 'xlsx', type: 'base64' });
 
-            const tramo = document.getElementById('tramo').value;
-
-            // 1. Generar y descargar inmediatamente en el celular
-            descargarExcelLocal(tramo);
-
-            // 2. Intentar subir respaldo al servidor Render
             try {
-                const res = await fetch('/api/guardar-respaldo', {
+                await fetch(`${URL_SERVIDOR}/api/guardar-excel-respaldo`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tipo: 'llegada', tramo, registros: registrosLocal })
+                    body: JSON.stringify({ nombreArchivo, contenidoBase64: excelBase64 })
                 });
+            } catch (e) { console.log("Servidor offline"); }
 
-                const data = await res.json();
-                if (data.ok) {
-                    alert(`✅ Respaldo descargado localmente y guardado en el servidor:\n${data.archivo}`);
-                } else {
-                    alert("⚠️ Respaldo guardado en tu celular, pero el servidor respondió: " + data.error);
-                }
-            } catch (e) {
-                alert("⚠️ Respaldo guardado en tu celular. (Sin conexión con el servidor)");
-            }
+            // 3. Limpiar registros locales
+            historialLocal = [];
+            localStorage.removeItem('llegadas_local');
+            guardarYRenderizar();
+            alert(`Tramo ${tramo} finalizado correctamente. Se descargó el archivo ${nombreArchivo}.`);
         }
+
+        setInterval(comprobarConexion, 5000);
+        guardarYRenderizar(); comprobarConexion();
     </script>
 </body>
 </html>
