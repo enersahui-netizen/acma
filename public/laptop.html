@@ -448,7 +448,8 @@
         async function cargarRespaldos() {
             try {
                 const res = await fetch(`${URL_SERVIDOR}/api/lista-respaldos`);
-                const archivos = await res.json();
+                const data = await res.json();
+                const archivos = data.archivos || [];
 
                 document.getElementById('lista-archivos').innerHTML = archivos.length === 0
                     ? '<li class="sin-datos">No hay respaldos todavía</li>'
@@ -460,6 +461,7 @@
                     `).join('');
             } catch (e) {
                 console.error("Error respaldos:", e);
+                document.getElementById('lista-archivos').innerHTML = '<li class="sin-datos">Error cargando respaldos</li>';
             }
         }
 
