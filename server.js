@@ -218,34 +218,48 @@ app.post('/api/partida', (req, res) => {
         return res.status(400).json({ ok: false, error: "Auto y tramo requeridos" });
     }
 
-    const horaRegistro = hora || new Date().toLocaleTimeString('es-PE', { hour12: false }) + '.' + new Date().getMilliseconds().toString().padStart(3, '0');
-
-    // Obtener datos del participante
-    db.get("SELECT * FROM participantes WHERE auto = ?", [auto], (err, participante) => {
-        db.run(
-            `INSERT INTO registros (tipo, auto, tramo, hora, juez) 
-             VALUES (?, ?, ?, ?, ?)`,
-            ['partida', auto, tramo, horaRegistro, juez || ''],
-            function(err) {
-                if (err) {
-                    console.error(err);
-                    return res.status(500).json({ ok: false, error: "Error al registrar" });
-                }
-                
-                const registro = { 
-                    id: this.lastID, 
-                    tipo: 'partida', 
-                    auto, 
-                    tramo, 
-                    hora: horaRegistro, 
-                    piloto: participante?.piloto || '-',
-                    ciudad: participante?.ciudad || '-'
-                };
-                notificarClientes({ evento: 'nueva_partida', datos: registro });
-                res.json({ ok: true, mensaje: "Partida registrada", id: this.lastID });
+    // Validar que no exista partida duplicada
+    db.get(
+        "SELECT * FROM registros WHERE auto = ? AND tramo = ? AND tipo = 'partida'",
+        [auto, tramo],
+        (err, registroExistente) => {
+            if (registroExistente) {
+                return res.status(400).json({ 
+                    ok: false, 
+                    error: `⚠️ Auto #${auto} YA PARTIÓ en tramo ${tramo}\n\nNo se permiten partidas duplicadas.\n\nHora: ${registroExistente.hora}` 
+                });
             }
-        );
-    });
+
+            const horaRegistro = hora || new Date().toLocaleTimeString('es-PE', { hour12: false }) + '.' + new Date().getMilliseconds().toString().padStart(3, '0');
+
+            // Obtener datos del participante
+            db.get("SELECT * FROM participantes WHERE auto = ?", [auto], (err, participante) => {
+                db.run(
+                    `INSERT INTO registros (tipo, auto, tramo, hora, juez) 
+                     VALUES (?, ?, ?, ?, ?)`,
+                    ['partida', auto, tramo, horaRegistro, juez || ''],
+                    function(err) {
+                        if (err) {
+                            console.error(err);
+                            return res.status(500).json({ ok: false, error: "Error al registrar" });
+                        }
+                        
+                        const registro = { 
+                            id: this.lastID, 
+                            tipo: 'partida', 
+                            auto, 
+                            tramo, 
+                            hora: horaRegistro, 
+                            piloto: participante?.piloto || '-',
+                            ciudad: participante?.ciudad || '-'
+                        };
+                        notificarClientes({ evento: 'nueva_partida', datos: registro });
+                        res.json({ ok: true, mensaje: "Partida registrada", id: this.lastID });
+                    }
+                );
+            });
+        }
+    );
 });
 
 // Registrar una Llegada (VERSIÓN SIMPLIFICADA)
@@ -256,33 +270,61 @@ app.post('/api/llegada', (req, res) => {
         return res.status(400).json({ ok: false, error: "Auto y tramo requeridos" });
     }
 
-    const horaRegistro = hora || new Date().toLocaleTimeString('es-PE', { hour12: false }) + '.' + new Date().getMilliseconds().toString().padStart(3, '0');
-
-    // Obtener datos del participante
-    db.get("SELECT * FROM participantes WHERE auto = ?", [auto], (err, participante) => {
-        db.run(
-            `INSERT INTO registros (tipo, auto, tramo, hora, juez) 
-             VALUES (?, ?, ?, ?, ?)`,
-            ['llegada', auto, tramo, horaRegistro, juez || ''],
-            function(err) {
-                if (err) {
-                    console.error(err);
-                    return res.status(500).json({ ok: false, error: "Error al registrar" });
-                }
-
-                const registro = { 
-                    id: this.lastID, 
-                    tipo: 'llegada', 
-                    auto, 
-                    tramo, 
-                    hora: horaRegistro,
-                    piloto: participante?.piloto || '-'
-                };
-                notificarClientes({ evento: 'nueva_llegada', datos: registro });
-                res.json({ ok: true, mensaje: "Llegada registrada", id: this.lastID });
+    // Validar que exista partida
+    db.get(
+        "SELECT * FROM registros WHERE auto = ? AND tramo = ? AND tipo = 'partida'",
+        [auto, tramo],
+        (err, partidaExistente) => {
+            if (!partidaExistente) {
+                return res.status(400).json({ 
+                    ok: false, 
+                    error: `⚠️ Auto #${auto} NO PARTIÓ en tramo ${tramo}\n\nNo puedes registrar llegada sin partida.` 
+                });
             }
-        );
-    });
+
+            // Validar que no exista llegada duplicada
+            db.get(
+                "SELECT * FROM registros WHERE auto = ? AND tramo = ? AND tipo = 'llegada'",
+                [auto, tramo],
+                (err, llegadaExistente) => {
+                    if (llegadaExistente) {
+                        return res.status(400).json({ 
+                            ok: false, 
+                            error: `⚠️ Auto #${auto} YA LLEGÓ en tramo ${tramo}\n\nNo se permiten llegadas duplicadas.\n\nHora: ${llegadaExistente.hora}` 
+                        });
+                    }
+
+                    const horaRegistro = hora || new Date().toLocaleTimeString('es-PE', { hour12: false }) + '.' + new Date().getMilliseconds().toString().padStart(3, '0');
+
+                    // Obtener datos del participante
+                    db.get("SELECT * FROM participantes WHERE auto = ?", [auto], (err, participante) => {
+                        db.run(
+                            `INSERT INTO registros (tipo, auto, tramo, hora, juez) 
+                             VALUES (?, ?, ?, ?, ?)`,
+                            ['llegada', auto, tramo, horaRegistro, juez || ''],
+                            function(err) {
+                                if (err) {
+                                    console.error(err);
+                                    return res.status(500).json({ ok: false, error: "Error al registrar" });
+                                }
+
+                                const registro = { 
+                                    id: this.lastID, 
+                                    tipo: 'llegada', 
+                                    auto, 
+                                    tramo, 
+                                    hora: horaRegistro,
+                                    piloto: participante?.piloto || '-'
+                                };
+                                notificarClientes({ evento: 'nueva_llegada', datos: registro });
+                                res.json({ ok: true, mensaje: "Llegada registrada", id: this.lastID });
+                            }
+                        );
+                    });
+                }
+            );
+        }
+    );
 });
 
 // Obtener datos en vivo
@@ -456,11 +498,20 @@ app.get('/api/lista-respaldos', (req, res) => {
 
 // Descargar respaldo
 app.get('/api/descargar-respaldo/:nombre', (req, res) => {
-    const ruta = path.join(__dirname, 'respaldos', req.params.nombre);
-    if (fs.existsSync(ruta)) {
-        res.download(ruta);
-    } else {
-        res.status(404).send("Archivo no encontrado");
+    const nombreArchivo = decodeURIComponent(req.params.nombre);
+    const ruta = path.join(__dirname, 'respaldos', nombreArchivo);
+    
+    try {
+        if (fs.existsSync(ruta)) {
+            res.download(ruta, nombreArchivo, (err) => {
+                if (err) console.error("Error descargando:", err);
+            });
+        } else {
+            res.status(404).json({ ok: false, error: "Archivo no encontrado: " + ruta });
+        }
+    } catch (err) {
+        console.error("Error en descarga:", err);
+        res.status(500).json({ ok: false, error: err.message });
     }
 });
 
