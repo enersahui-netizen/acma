@@ -124,7 +124,22 @@
             `).join('');
         }
 
-        function exportarExcel() { alert("Exportando partidas..."); }
+        async function exportarExcel() {
+            if (registrosLocal.length === 0) return alert("No hay registros para exportar.");
+            const tramo = document.getElementById('tramo').value;
+
+            try {
+                const res = await fetch('/api/guardar-respaldo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tipo: 'partida', tramo, registros: registrosLocal })
+                });
+                const data = await res.json();
+                if (data.ok) alert(`✅ Respaldo generado: ${data.archivo}`);
+            } catch (e) {
+                alert("❌ Error al guardar el respaldo en el servidor.");
+            }
+        }
     </script>
 </body>
 </html>
