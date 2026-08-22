@@ -1,103 +1,64 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
-const fs = require('fs');
 
 const app = express();
 
 app.use(cors());
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Almacenamiento temporal en memoria
+// Almacenamiento dinámico en memoria
 let partidas = [];
 let llegadas = [];
 
-// ================= RUTAS DE PÁGINAS =================
+// ================= RUTAS PARA SERVIR PÁGINAS =================
 
-// Ruta Raíz / Index
+// Redirige la raíz al control de partida por defecto
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(__dirname, 'public', 'partida.html'));
 });
 
-// Ruta Laptop (Dashboard Director de Carrera)
+// Ruta para el control de llegada
+app.get('/llegada', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'llegada.html'));
+});
+
+// Ruta para la pantalla del Director de Carrera
 app.get('/laptop', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'laptop.html'));
 });
 
 // ================= ENDPOINTS API =================
 
-// Registrar una Partida
+// Registrar una partida
 app.post('/api/partida', (req, res) => {
-    partidas.push(req.body);
-    console.log("Nueva partida recibida:", req.body);
-    res.status(200).json({ ok: true, mensaje: "Partida registrada" });
+    const { auto, tramo, hora } = req.body;
+    partidas.push({ auto, tramo, hora });
+    res.json({ ok: true, mensaje: "Partida registrada" });
 });
 
-// Registrar una Llegada
+// Registrar una llegada
 app.post('/api/llegada', (req, res) => {
-    llegadas.push(req.body);
-    console.log("Nueva llegada recibida:", req.body);
-    res.status(200).json({ ok: true, mensaje: "Llegada registrada" });
+    const { auto, tramo, hora } = req.body;
+    llegadas.push({ auto, tramo, hora });
+    res.json({ ok: true, mensaje: "Llegada registrada" });
 });
 
-// Obtener datos en vivo para la Laptop
+// Obtener todos los datos para la laptop (panel en vivo)
 app.get('/api/obtener-datos-vivo', (req, res) => {
-    res.json({
-        partidas: partidas,
-        llegadas: llegadas
-    });
+    res.json({ partidas, llegadas });
 });
 
-// Guardar respaldo de archivos .xlsx
-app.post('/api/guardar-excel-respaldo', (req, res) => {
-    const { nombreArchivo, contenidoBase64 } = req.body;
-
-    if (!nombreArchivo || !contenidoBase64) {
-        return res.status(400).json({ ok: false, mensaje: "Datos incompletos" });
-    }
-
-    const folderPath = path.join(__dirname, 'respaldos');
-    if (!fs.existsSync(folderPath)) {
-        fs.mkdirSync(folderPath);
-    }
-
-    const filePath = path.join(folderPath, nombreArchivo);
-    const buffer = Buffer.from(contenidoBase64, 'base64');
-
-    fs.writeFile(filePath, buffer, (err) => {
-        if (err) {
-            console.error("Error guardando el .xlsx:", err);
-            return res.status(500).json({ ok: false, mensaje: "Error al guardar el archivo" });
-        }
-        console.log(`Archivo .xlsx respaldado: ${nombreArchivo}`);
-        res.status(200).json({ ok: true, mensaje: "Respaldo .xlsx guardado correctamente" });
-    });
+// Limpiar todas las tablas de datos para iniciar un nuevo tramo
+app.post('/api/limpiar-todo', (req, res) => {
+    partidas = [];
+    llegadas = [];
+    res.json({ ok: true, mensaje: "Datos limpiados correctamente" });
 });
 
-// Obtener lista de respaldos .xlsx
-app.get('/api/lista-respaldos', (req, res) => {
-    const folderPath = path.join(__dirname, 'respaldos');
-    if (fs.existsSync(folderPath)) {
-        const archivos = fs.readdirSync(folderPath).filter(f => f.endsWith('.xlsx'));
-        return res.json(archivos);
-    }
-    res.json([]);
-});
-
-// Descargar un respaldo .xlsx específico
-app.get('/api/descargar-respaldo/:nombre', (req, res) => {
-    const ruta = path.join(__dirname, 'respaldos', req.params.nombre);
-    if (fs.existsSync(ruta)) {
-        res.download(ruta);
-    } else {
-        res.status(404).send("Archivo no encontrado");
-    }
-});
-
-
-// Iniciar Servidor
+// Servidor escuchando en Render
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-    console.log(`Servidor escuchando en el puerto ${PORT}`);
+    console.log(`Servidor de carreras corriendo en el puerto ${PORT}`);
 });
