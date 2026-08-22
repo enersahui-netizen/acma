@@ -302,94 +302,103 @@ app.get('/api/obtener-datos-vivo', (req, res) => {
 app.get('/api/reporte-datos', (req, res) => {
     const { categoria, ciudad, tramo } = req.query;
 
-    let query = `
-        SELECT 
-            r1.auto, 
-            r1.categoria, 
-            r1.piloto, 
-            r1.copiloto, 
-            r1.juez, 
-            r1.representante, 
-            r1.ciudad,
-            r1.tramo,
-            r1.hora as hora_partida,
-            r2.hora as hora_llegada
-        FROM registros r1
-        LEFT JOIN registros r2 ON r1.auto = r2.auto AND r1.tramo = r2.tramo AND r2.tipo = 'llegada'
-        WHERE r1.tipo = 'partida'
-    `;
-
-    const params = [];
-
-    if (categoria) {
-        query += " AND r1.categoria = ?";
-        params.push(categoria);
-    }
-    if (ciudad) {
-        query += " AND r1.ciudad = ?";
-        params.push(ciudad);
-    }
-    if (tramo) {
-        query += " AND r1.tramo = ?";
-        params.push(tramo);
-    }
-
-    query += " ORDER BY r1.tramo, r1.auto";
-
-    db.all(query, params, (err, rows) => {
-        if (err) {
-            console.error(err);
-            return res.status(500).json({ ok: false, error: "Error obteniendo datos" });
+    // Primero obtener participantes para datos adicionales
+    db.all("SELECT * FROM participantes", (err, participantes) => {
+        const mapParticipantes = {};
+        if (participantes) {
+            participantes.forEach(p => {
+                mapParticipantes[p.auto] = p;
+            });
         }
 
-        // Calcular tiempos
-        const datos = rows.map(row => {
-            let tiempo_transcurrido = null;
-            if (row.hora_partida && row.hora_llegada) {
-                const [hp, mp, sp] = row.hora_partida.split(':');
-                const [hl, ml, sl] = row.hora_llegada.split(':');
-                const msPartida = parseInt(hp) * 3600000 + parseInt(mp) * 60000 + parseFloat(sp) * 1000;
-                const msLlegada = parseInt(hl) * 3600000 + parseInt(ml) * 60000 + parseFloat(sl) * 1000;
-                tiempo_transcurrido = msLlegada - msPartida;
+        let query = `
+            SELECT 
+                r1.auto, 
+                r1.tramo,
+                r1.hora as hora_partida,
+                r2.hora as hora_llegada,
+                r1.juez
+            FROM registros r1
+            LEFT JOIN registros r2 ON r1.auto = r2.auto AND r1.tramo = r2.tramo AND r2.tipo = 'llegada'
+            WHERE r1.tipo = 'partida'
+        `;
+
+        const params = [];
+
+        if (tramo) {
+            query += " AND r1.tramo = ?";
+            params.push(tramo);
+        }
+
+        query += " ORDER BY r1.tramo, r1.auto";
+
+        db.all(query, params, (err, rows) => {
+            if (err) {
+                console.error(err);
+                return res.status(500).json({ ok: false, error: "Error obteniendo datos" });
             }
 
-            return {
-                auto: row.auto,
-                categoria: row.categoria,
-                piloto: row.piloto,
-                copiloto: row.copiloto,
-                juez: row.juez,
-                representante: row.representante,
-                ciudad: row.ciudad,
-                tramo: row.tramo,
-                hora_partida: row.hora_partida,
-                hora_llegada: row.hora_llegada,
-                tiempo_ms: tiempo_transcurrido
-            };
+            // Calcular tiempos y agregar datos del participante
+            const datos = rows.map(row => {
+                const participante = mapParticipantes[row.auto] || {};
+                
+                let tiempo_transcurrido = null;
+                if (row.hora_partida && row.hora_llegada) {
+                    const [hp, mp, sp] = row.hora_partida.split(':');
+                    const [hl, ml, sl] = row.hora_llegada.split(':');
+                    const msPartida = parseInt(hp) * 3600000 + parseInt(mp) * 60000 + parseFloat(sp) * 1000;
+                    const msLlegada = parseInt(hl) * 3600000 + parseInt(ml) * 60000 + parseFloat(sl) * 1000;
+                    tiempo_transcurrido = msLlegada - msPartida;
+                }
+
+                // Aplicar filtros
+                if (categoria && participante.categoria !== categoria) return null;
+                if (ciudad && participante.ciudad !== ciudad) return null;
+
+                return {
+                    auto: row.auto,
+                    categoria: participante.categoria || '-',
+                    piloto: participante.piloto || '-',
+                    copiloto: participante.copiloto || '-',
+                    juez: row.juez || '-',
+                    representante: participante.representante || '-',
+                    ciudad: participante.ciudad || '-',
+                    tramo: row.tramo,
+                    hora_partida: row.hora_partida,
+                    hora_llegada: row.hora_llegada,
+                    tiempo_ms: tiempo_transcurrido
+                };
+            }).filter(d => d !== null);
+
+            res.json({ ok: true, datos });
         });
-
-        res.json({ ok: true, datos });
     });
 });
 
-// Obtener listado de tramos únicos
+// Obtener listado de tramos únicos (desde registros)
 app.get('/api/tramos', (req, res) => {
-    db.all("SELECT DISTINCT tramo FROM registros ORDER BY tramo", (err, rows) => {
-        res.json({ tramos: rows?.map(r => r.tramo) || [] });
+    db.all("SELECT DISTINCT tramo FROM registros WHERE tramo IS NOT NULL ORDER BY tramo", (err, rows) => {
+        const tramos = rows?.map(r => r.tramo) || [];
+        console.log("Tramos encontrados:", tramos);
+        res.json({ ok: true, tramos });
     });
 });
 
-// Obtener listado de ciudades únicas
+// Obtener listado de ciudades únicas (desde participantes)
 app.get('/api/ciudades', (req, res) => {
-    db.all("SELECT DISTINCT ciudad FROM registros WHERE ciudad IS NOT NULL ORDER BY ciudad", (err, rows) => {
-        res.json({ ciudades: rows?.map(r => r.ciudad) || [] });
+    db.all("SELECT DISTINCT ciudad FROM participantes WHERE ciudad IS NOT NULL AND ciudad != '' ORDER BY ciudad", (err, rows) => {
+        const ciudades = rows?.map(r => r.ciudad) || [];
+        console.log("Ciudades encontradas:", ciudades);
+        res.json({ ok: true, ciudades });
     });
 });
 
-// Obtener listado de categorías únicas
+// Obtener listado de categorías únicas (desde participantes)
 app.get('/api/categorias', (req, res) => {
-    db.all("SELECT DISTINCT categoria FROM registros WHERE categoria IS NOT NULL ORDER BY categoria", (err, rows) => {
-        res.json({ categorias: rows?.map(r => r.categoria) || [] });
+    db.all("SELECT DISTINCT categoria FROM participantes WHERE categoria IS NOT NULL AND categoria != '' ORDER BY categoria", (err, rows) => {
+        const categorias = rows?.map(r => r.categoria) || [];
+        console.log("Categorías encontradas:", categorias);
+        res.json({ ok: true, categorias });
     });
 });
 
@@ -402,30 +411,47 @@ app.post('/api/guardar-excel-respaldo', (req, res) => {
     }
 
     const folderPath = path.join(__dirname, 'respaldos');
+    
+    // Crear carpeta si no existe
     if (!fs.existsSync(folderPath)) {
-        fs.mkdirSync(folderPath);
+        fs.mkdirSync(folderPath, { recursive: true });
     }
 
     const filePath = path.join(folderPath, nombreArchivo);
-    const buffer = Buffer.from(contenidoBase64, 'base64');
-
-    fs.writeFile(filePath, buffer, (err) => {
-        if (err) {
-            console.error("Error guardando .xlsx:", err);
-            return res.status(500).json({ ok: false, error: "Error al guardar" });
+    
+    try {
+        // Remover el data URL prefix si existe
+        let data = contenidoBase64;
+        if (data.includes('base64,')) {
+            data = data.split('base64,')[1];
         }
-        res.json({ ok: true, mensaje: "Respaldo guardado" });
-    });
+        
+        const buffer = Buffer.from(data, 'base64');
+        fs.writeFileSync(filePath, buffer);
+        
+        console.log(`✅ Respaldo guardado: ${filePath}`);
+        res.json({ ok: true, mensaje: "Respaldo guardado correctamente" });
+    } catch (err) {
+        console.error("Error guardando .xlsx:", err);
+        res.status(500).json({ ok: false, error: "Error al guardar: " + err.message });
+    }
 });
 
 // Obtener lista de respaldos
 app.get('/api/lista-respaldos', (req, res) => {
     const folderPath = path.join(__dirname, 'respaldos');
-    if (fs.existsSync(folderPath)) {
-        const archivos = fs.readdirSync(folderPath).filter(f => f.endsWith('.xlsx'));
-        return res.json(archivos);
+    try {
+        if (fs.existsSync(folderPath)) {
+            const archivos = fs.readdirSync(folderPath)
+                .filter(f => f.endsWith('.xlsx'))
+                .sort((a, b) => fs.statSync(path.join(folderPath, b)).mtime - fs.statSync(path.join(folderPath, a)).mtime);
+            return res.json({ ok: true, archivos });
+        }
+        res.json({ ok: true, archivos: [] });
+    } catch (err) {
+        console.error("Error listando respaldos:", err);
+        res.json({ ok: true, archivos: [] });
     }
-    res.json([]);
 });
 
 // Descargar respaldo
