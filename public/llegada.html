@@ -3,116 +3,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Juez de Llegada - ACMA</title>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <title>Llegada - ACMA</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; background: #121212; color: #fff; padding: 15px; }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 12px; margin-bottom: 15px; }
-        .header h2 { font-size: 1.2rem; margin: 0; }
-        .estado { padding: 6px 12px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
-        .online { background: #28a745; }
-        .offline { background: #dc3545; }
-        .reloj { font-size: 2rem; color: #ff3366; text-align: center; margin: 15px 0; font-family: monospace; font-weight: bold; }
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
-        .form-grid.full { grid-template-columns: 1fr; }
-        .form-group { display: flex; flex-direction: column; }
-        label { color: #aaa; margin-bottom: 4px; font-size: 0.85rem; font-weight: bold; }
-        input, select { padding: 8px; border-radius: 5px; border: 1px solid #444; background: #222; color: white; font-size: 0.95rem; }
-        input:focus, select:focus { outline: none; border-color: #ff3366; box-shadow: 0 0 5px rgba(255, 51, 102, 0.3); }
-        .btn-llegada { width: 100%; padding: 12px; background: #ff3366; color: #fff; font-weight: bold; font-size: 1rem; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; transition: all 0.2s; }
-        .btn-llegada:hover { background: #ff1a4d; transform: translateY(-2px); }
-        .btn-finalizar { width: 100%; padding: 10px; background: #ff9900; color: #000; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; margin-top: 8px; }
-        .btn-finalizar:hover { background: #ffaa00; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
-        th, td { text-align: left; padding: 8px; border-bottom: 1px solid #333; }
-        th { color: #888; background: #1a1a1a; }
-        tr:hover { background: #1a1a1a; }
-        h3 { margin-top: 20px; margin-bottom: 10px; font-size: 1rem; color: #ff3366; }
-        .info-box { background: #1a1a1a; border-left: 3px solid #ff3366; padding: 10px; margin-bottom: 15px; font-size: 0.9rem; }
-        .info-box strong { color: #ff3366; }
+        body {
+            font-family: Arial, sans-serif;
+            background: #121212;
+            color: #fff;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 400px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #333;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+        .header h2 {
+            font-size: 1.5rem;
+            margin: 0;
+        }
+        .estado {
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+        .online {
+            background: #28a745;
+        }
+        .offline {
+            background: #dc3545;
+        }
+        .reloj {
+            font-size: 3rem;
+            color: #ff3366;
+            text-align: center;
+            margin: 20px 0;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        .input-grande {
+            font-size: 2rem;
+            padding: 20px;
+            text-align: center;
+            border: 3px solid #ff3366;
+            background: #1a1a1a;
+            color: #ff3366;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .input-grande:focus {
+            outline: none;
+            border-color: #ff1a4d;
+            box-shadow: 0 0 10px rgba(255, 51, 102, 0.5);
+        }
+        .btn-llegada {
+            width: 100%;
+            padding: 20px;
+            background: #ff3366;
+            color: #fff;
+            font-weight: bold;
+            font-size: 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 10px;
+        }
+        .btn-llegada:hover {
+            background: #ff1a4d;
+            transform: scale(1.02);
+        }
+        .btn-llegada:active {
+            transform: scale(0.98);
+        }
+        .btn-finalizar {
+            width: 100%;
+            padding: 12px;
+            background: #ff9900;
+            color: #000;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        .tabla-rapida {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 20px;
+        }
+        .tabla-rapida h3 {
+            color: #ff3366;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+        .fila-auto {
+            background: #252525;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.95rem;
+        }
+        .fila-auto strong {
+            color: #ff3366;
+        }
+        .fila-auto .hora {
+            color: #aaa;
+            font-size: 0.85rem;
+        }
+        .fila-auto .estado {
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 0.8rem;
+        }
+        .estado-ok {
+            background: #28a745;
+        }
+        .estado-pendiente {
+            background: #ffc107;
+            color: #000;
+        }
+        .info {
+            background: #3a1a1a;
+            border-left: 3px solid #ff3366;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h2>🛑 JUEZ DE LLEGADA</h2>
-        <span id="indicador-estado" class="estado offline">OFFLINE</span>
+    <div class="container">
+        <div class="header">
+            <h2>🛑 LLEGADA</h2>
+            <span id="indicador-estado" class="estado offline">OFFLINE</span>
+        </div>
+
+        <div class="reloj" id="reloj-oficial">00:00:00</div>
+
+        <div class="info">
+            <strong>⚡ RÁPIDO:</strong> Solo ingresa nº auto y presiona LLEGADA
+        </div>
+
+        <input type="number" id="num_auto" class="input-grande" placeholder="Nº AUTO" inputmode="numeric" autofocus>
+
+        <button class="btn-llegada" onclick="registrarLlegada()">🛑 REGISTRAR LLEGADA</button>
+
+        <button class="btn-finalizar" onclick="finalizarTramo()">📦 FINALIZAR TRAMO</button>
+
+        <div class="tabla-rapida">
+            <h3>ÚLTIMAS 10 LLEGADAS</h3>
+            <div id="ultimas-llegadas"></div>
+        </div>
     </div>
-
-    <div class="reloj" id="reloj-oficial">00:00:00</div>
-
-    <div class="info-box">
-        <strong>ℹ️ Instrucciones:</strong> Registra el vehículo al cruzar la meta. Los datos menos críticos pueden dejarse en blanco si es necesario ir rápido.
-    </div>
-
-    <form onsubmit="registrarLlegada(event)">
-        <div class="form-grid">
-            <div class="form-group">
-                <label>N° VEHÍCULO *</label>
-                <input type="number" id="num_auto" placeholder="Ej: 402" required>
-            </div>
-            <div class="form-group">
-                <label>TRAMO (PE) *</label>
-                <select id="tramo" required>
-                    <option value="">-- Seleccionar --</option>
-                    <option value="PE-01">PE-01</option>
-                    <option value="PE-02">PE-02</option>
-                    <option value="PE-03">PE-03</option>
-                    <option value="PE-04">PE-04</option>
-                    <option value="PE-05">PE-05</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="form-grid">
-            <div class="form-group">
-                <label>JUEZ *</label>
-                <input type="text" id="juez" placeholder="Nombre del juez" required>
-            </div>
-            <div class="form-group">
-                <label>PILOTO</label>
-                <input type="text" id="piloto" placeholder="Nombre piloto (opcional)">
-            </div>
-        </div>
-
-        <div class="form-grid">
-            <div class="form-group">
-                <label>COPILOTO</label>
-                <input type="text" id="copiloto" placeholder="Nombre copiloto (opcional)">
-            </div>
-            <div class="form-group">
-                <label>REPRESENTANTE</label>
-                <input type="text" id="representante" placeholder="Empresa/Equipo (opcional)">
-            </div>
-        </div>
-
-        <div class="form-grid full">
-            <div class="form-group">
-                <label>CIUDAD</label>
-                <input type="text" id="ciudad" placeholder="Ciudad de origen (opcional)">
-            </div>
-        </div>
-
-        <button type="submit" class="btn-llegada">🛑 REGISTRAR LLEGADA</button>
-        <button type="button" class="btn-finalizar" onclick="finalizarYLimpiarTramo()">📦 FINALIZAR TRAMO (EXPORTAR .XLSX)</button>
-    </form>
-
-    <h3>REGISTROS DEL TRAMO</h3>
-    <table>
-        <thead>
-            <tr>
-                <th>Auto</th>
-                <th>Tramo</th>
-                <th>Hora</th>
-                <th>Juez</th>
-                <th>Estado</th>
-            </tr>
-        </thead>
-        <tbody id="historial-body">
-            <tr><td colspan="5">Sin registros</td></tr>
-        </tbody>
-    </table>
 
     <script>
         const URL_SERVIDOR = window.location.origin;
@@ -127,7 +188,7 @@
         async function comprobarConexion() {
             const badge = document.getElementById('indicador-estado');
             try {
-                const res = await fetch(`${URL_SERVIDOR}/`, { method: 'HEAD', timeout: 5000 });
+                const res = await fetch(`${URL_SERVIDOR}/`, { method: 'HEAD' });
                 if (res.ok) {
                     badge.innerText = "ONLINE";
                     badge.className = "estado online";
@@ -139,26 +200,13 @@
             }
         }
 
-        async function registrarLlegada(e) {
-            e.preventDefault();
-
+        async function registrarLlegada() {
             const auto = document.getElementById('num_auto').value.trim();
-            const tramo = document.getElementById('tramo').value;
-            const juez = document.getElementById('juez').value.trim();
-            const piloto = document.getElementById('piloto').value.trim();
-            const copiloto = document.getElementById('copiloto').value.trim();
-            const representante = document.getElementById('representante').value.trim();
-            const ciudad = document.getElementById('ciudad').value.trim();
-
-            if (!auto || !tramo || !juez) {
-                alert("⚠️ Completa los campos obligatorios (auto, tramo, juez)");
+            
+            if (!auto) {
+                alert("Ingresa el número de auto");
+                document.getElementById('num_auto').focus();
                 return;
-            }
-
-            // Validar duplicado
-            const yaExiste = historialLocal.some(item => item.auto === auto && item.tramo === tramo);
-            if (yaExiste) {
-                if (!confirm(`⚠️ Auto #${auto} ya fue registrado en ${tramo}.\n¿Registrar nuevamente?`)) return;
             }
 
             const hora = new Date().toLocaleTimeString('es-PE', { hour12: false }) + '.' + new Date().getMilliseconds().toString().padStart(3, '0');
@@ -166,12 +214,6 @@
             const registro = {
                 id: Date.now(),
                 auto: auto,
-                tramo: tramo,
-                juez: juez,
-                piloto: piloto,
-                copiloto: copiloto,
-                representante: representante,
-                ciudad: ciudad,
                 hora: hora,
                 tipo: 'llegada',
                 enviado: false
@@ -179,7 +221,7 @@
 
             historialLocal.unshift(registro);
             guardarYRenderizar();
-            document.querySelector('form').reset();
+            document.getElementById('num_auto').value = '';
             document.getElementById('num_auto').focus();
             await sincronizarPendientes();
         }
@@ -188,14 +230,22 @@
             for (let item of historialLocal) {
                 if (!item.enviado) {
                     try {
+                        // Determinar tramo de la URL o usar default
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const tramo = urlParams.get('tramo') || 'PE-01';
+
                         const res = await fetch(`${URL_SERVIDOR}/api/llegada`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(item)
+                            body: JSON.stringify({
+                                auto: item.auto,
+                                tramo: tramo,
+                                hora: item.hora,
+                                juez: 'Juez de Llegada'
+                            })
                         });
                         if (res.ok) item.enviado = true;
                     } catch (e) {
-                        console.log("Sincronización fallida, reintentando...");
                         break;
                     }
                 }
@@ -205,76 +255,44 @@
 
         function guardarYRenderizar() {
             localStorage.setItem('llegadas_local', JSON.stringify(historialLocal));
-            const tbody = document.getElementById('historial-body');
             
-            if (historialLocal.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5">Sin registros</td></tr>';
+            const div = document.getElementById('ultimas-llegadas');
+            const ultimas = historialLocal.slice(0, 10);
+            
+            if (ultimas.length === 0) {
+                div.innerHTML = '<div style="color: #666; text-align: center;">Sin registros</div>';
                 return;
             }
 
-            tbody.innerHTML = historialLocal.map(item => `
-                <tr>
-                    <td><strong>#${item.auto}</strong></td>
-                    <td>${item.tramo}</td>
-                    <td>${item.hora}</td>
-                    <td>${item.juez}</td>
-                    <td>${item.enviado ? '✅' : '⏳'}</td>
-                </tr>
+            div.innerHTML = ultimas.map(item => `
+                <div class="fila-auto">
+                    <strong>#${item.auto}</strong>
+                    <span class="hora">${item.hora}</span>
+                    <span class="estado ${item.enviado ? 'estado-ok' : 'estado-pendiente'}">
+                        ${item.enviado ? '✅' : '⏳'}
+                    </span>
+                </div>
             `).join('');
         }
 
-        async function finalizarYLimpiarTramo() {
+        async function finalizarTramo() {
             if (historialLocal.length === 0) {
-                alert("No hay registros en este tramo.");
+                alert("No hay registros");
                 return;
             }
 
-            const tramo = document.getElementById('tramo').value || 'general';
-            if (!confirm(`¿Finalizar tramo ${tramo}? Se exportará el Excel y se limpiarán los datos.`)) return;
-
-            const nombreArchivo = `${tramo.toLowerCase()}-llegada-${new Date().getTime()}.xlsx`;
-            const datosExcel = historialLocal.map(item => ({
-                "Auto": item.auto,
-                "Tramo": item.tramo,
-                "Hora Llegada": item.hora,
-                "Piloto": item.piloto || '',
-                "Copiloto": item.copiloto || '',
-                "Juez": item.juez,
-                "Representante": item.representante || '',
-                "Ciudad": item.ciudad || ''
-            }));
-
-            const worksheet = XLSX.utils.json_to_sheet(datosExcel);
-            worksheet['!cols'] = [
-                { wch: 8 }, { wch: 8 }, { wch: 12 }, { wch: 16 },
-                { wch: 16 }, { wch: 16 }, { wch: 18 }, { wch: 15 }
-            ];
-
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Llegadas");
-            XLSX.writeFile(workbook, nombreArchivo);
-
-            // Respaldo en servidor
-            const excelBase64 = XLSX.write(workbook, { bookType: 'xlsx', type: 'base64' });
-            try {
-                await fetch(`${URL_SERVIDOR}/api/guardar-excel-respaldo`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nombreArchivo, contenidoBase64: excelBase64 })
-                });
-            } catch (e) {
-                console.log("Respaldo no disponible (offline)");
-            }
-
+            alert(`✅ Tramo finalizado con ${historialLocal.length} llegadas registradas.\n\nSincronización completada.`);
             historialLocal = [];
             localStorage.removeItem('llegadas_local');
             guardarYRenderizar();
-            alert(`✅ Tramo ${tramo} finalizado. Se descargó ${nombreArchivo}`);
         }
 
         setInterval(comprobarConexion, 5000);
         guardarYRenderizar();
         comprobarConexion();
+
+        // Auto-focus en input
+        document.getElementById('num_auto').focus();
     </script>
 
 </body>

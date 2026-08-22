@@ -3,131 +3,181 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Juez de Partida - ACMA</title>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <title>Partida - ACMA</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; background: #121212; color: #fff; padding: 15px; }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 12px; margin-bottom: 15px; }
-        .header h2 { font-size: 1.2rem; margin: 0; }
-        .estado { padding: 6px 12px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
-        .online { background: #28a745; }
-        .offline { background: #dc3545; }
-        .reloj { font-size: 2rem; color: #00ff66; text-align: center; margin: 15px 0; font-family: monospace; font-weight: bold; }
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
-        .form-grid.full { grid-template-columns: 1fr; }
-        .form-group { display: flex; flex-direction: column; }
-        label { color: #aaa; margin-bottom: 4px; font-size: 0.85rem; font-weight: bold; }
-        input, select { padding: 8px; border-radius: 5px; border: 1px solid #444; background: #222; color: white; font-size: 0.95rem; }
-        input:focus, select:focus { outline: none; border-color: #00ff66; box-shadow: 0 0 5px rgba(0, 255, 102, 0.3); }
-        .btn-partida { width: 100%; padding: 12px; background: #00ff66; color: #000; font-weight: bold; font-size: 1rem; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; transition: all 0.2s; }
-        .btn-partida:hover { background: #00dd55; transform: translateY(-2px); }
-        .btn-finalizar { width: 100%; padding: 10px; background: #ff9900; color: #000; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; margin-top: 8px; }
-        .btn-finalizar:hover { background: #ffaa00; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
-        th, td { text-align: left; padding: 8px; border-bottom: 1px solid #333; }
-        th { color: #888; background: #1a1a1a; }
-        tr:hover { background: #1a1a1a; }
-        h3 { margin-top: 20px; margin-bottom: 10px; font-size: 1rem; color: #00ff66; }
-        .info-box { background: #1a1a1a; border-left: 3px solid #00ff66; padding: 10px; margin-bottom: 15px; font-size: 0.9rem; }
-        .info-box strong { color: #00ff66; }
+        body {
+            font-family: Arial, sans-serif;
+            background: #121212;
+            color: #fff;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 400px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #333;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+        .header h2 {
+            font-size: 1.5rem;
+            margin: 0;
+        }
+        .estado {
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+        .online {
+            background: #28a745;
+        }
+        .offline {
+            background: #dc3545;
+        }
+        .reloj {
+            font-size: 3rem;
+            color: #00ff66;
+            text-align: center;
+            margin: 20px 0;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        .input-grande {
+            font-size: 2rem;
+            padding: 20px;
+            text-align: center;
+            border: 3px solid #00ff66;
+            background: #1a1a1a;
+            color: #00ff66;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .input-grande:focus {
+            outline: none;
+            border-color: #00dd55;
+            box-shadow: 0 0 10px rgba(0, 255, 102, 0.5);
+        }
+        .btn-largada {
+            width: 100%;
+            padding: 20px;
+            background: #00ff66;
+            color: #000;
+            font-weight: bold;
+            font-size: 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 10px;
+        }
+        .btn-largada:hover {
+            background: #00dd55;
+            transform: scale(1.02);
+        }
+        .btn-largada:active {
+            transform: scale(0.98);
+        }
+        .btn-finalizar {
+            width: 100%;
+            padding: 12px;
+            background: #ff9900;
+            color: #000;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        .tabla-rapida {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 20px;
+        }
+        .tabla-rapida h3 {
+            color: #00ff66;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+        .fila-auto {
+            background: #252525;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.95rem;
+        }
+        .fila-auto strong {
+            color: #00ff66;
+        }
+        .fila-auto .hora {
+            color: #aaa;
+            font-size: 0.85rem;
+        }
+        .fila-auto .estado {
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 0.8rem;
+        }
+        .estado-ok {
+            background: #28a745;
+        }
+        .estado-pendiente {
+            background: #ffc107;
+            color: #000;
+        }
+        .info {
+            background: #1a3a1a;
+            border-left: 3px solid #00ff66;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h2>🟢 JUEZ DE PARTIDA</h2>
-        <span id="indicador-estado" class="estado offline">OFFLINE</span>
+    <div class="container">
+        <div class="header">
+            <h2>🟢 PARTIDA</h2>
+            <span id="indicador-estado" class="estado offline">OFFLINE</span>
+        </div>
+
+        <div class="reloj" id="reloj-oficial">00:00:00</div>
+
+        <div class="info">
+            <strong>⚡ RÁPIDO:</strong> Solo ingresa nº auto y presiona LARGADA
+        </div>
+
+        <input type="number" id="num_auto" class="input-grande" placeholder="Nº AUTO" inputmode="numeric" autofocus>
+
+        <button class="btn-largada" onclick="darLargada()">🟢 DAR LARGADA</button>
+
+        <button class="btn-finalizar" onclick="finalizarTramo()">📦 FINALIZAR TRAMO</button>
+
+        <div class="tabla-rapida">
+            <h3>ÚLTIMOS 10 REGISTROS</h3>
+            <div id="ultimos-autos"></div>
+        </div>
     </div>
-
-    <div class="reloj" id="reloj-oficial">00:00:00</div>
-
-    <div class="info-box">
-        <strong>ℹ️ Instrucciones:</strong> Completa todos los campos del vehículo al momento de la largada. Los datos se sincronizarán automáticamente.
-    </div>
-
-    <form onsubmit="darLargada(event)">
-        <div class="form-grid">
-            <div class="form-group">
-                <label>N° VEHÍCULO *</label>
-                <input type="number" id="num_auto" placeholder="Ej: 402" required>
-            </div>
-            <div class="form-group">
-                <label>TRAMO (PE) *</label>
-                <select id="tramo" required>
-                    <option value="">-- Seleccionar --</option>
-                    <option value="PE-01">PE-01</option>
-                    <option value="PE-02">PE-02</option>
-                    <option value="PE-03">PE-03</option>
-                    <option value="PE-04">PE-04</option>
-                    <option value="PE-05">PE-05</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="form-grid">
-            <div class="form-group">
-                <label>CATEGORÍA *</label>
-                <select id="categoria" required>
-                    <option value="">-- Seleccionar --</option>
-                    <option value="General / Libre">General / Libre</option>
-                    <option value="Turismo 1600cc">Turismo 1600cc</option>
-                    <option value="S1600">S1600</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>JUEZ *</label>
-                <input type="text" id="juez" placeholder="Nombre del juez" required>
-            </div>
-        </div>
-
-        <div class="form-grid">
-            <div class="form-group">
-                <label>PILOTO *</label>
-                <input type="text" id="piloto" placeholder="Nombre piloto" required>
-            </div>
-            <div class="form-group">
-                <label>COPILOTO</label>
-                <input type="text" id="copiloto" placeholder="Nombre copiloto (opcional)">
-            </div>
-        </div>
-
-        <div class="form-grid">
-            <div class="form-group">
-                <label>REPRESENTANTE *</label>
-                <input type="text" id="representante" placeholder="Empresa/Equipo" required>
-            </div>
-            <div class="form-group">
-                <label>CIUDAD *</label>
-                <input type="text" id="ciudad" placeholder="Ciudad de origen" required>
-            </div>
-        </div>
-
-        <button type="submit" class="btn-partida">🟢 DAR LARGADA</button>
-        <button type="button" class="btn-finalizar" onclick="finalizarYLimpiarTramo()">📦 FINALIZAR TRAMO (EXPORTAR .XLSX)</button>
-    </form>
-
-    <h3>REGISTROS DEL TRAMO</h3>
-    <table>
-        <thead>
-            <tr>
-                <th>Auto</th>
-                <th>Piloto</th>
-                <th>Tramo</th>
-                <th>Hora</th>
-                <th>Estado</th>
-            </tr>
-        </thead>
-        <tbody id="historial-body">
-            <tr><td colspan="5">Sin registros</td></tr>
-        </tbody>
-    </table>
 
     <script>
         const URL_SERVIDOR = window.location.origin;
         let historialLocal = JSON.parse(localStorage.getItem('partidas_local') || "[]");
-        let intentosReconexion = 0;
-        const MAX_INTENTOS = 5;
 
         function actualizarReloj() {
             document.getElementById('reloj-oficial').innerText = new Date().toTimeString().split(' ')[0];
@@ -138,41 +188,36 @@
         async function comprobarConexion() {
             const badge = document.getElementById('indicador-estado');
             try {
-                const res = await fetch(`${URL_SERVIDOR}/`, { method: 'HEAD', timeout: 5000 });
+                const res = await fetch(`${URL_SERVIDOR}/`, { method: 'HEAD' });
                 if (res.ok) {
                     badge.innerText = "ONLINE";
                     badge.className = "estado online";
-                    intentosReconexion = 0;
                     await sincronizarPendientes();
                 } else throw new Error();
             } catch (e) {
                 badge.innerText = "OFFLINE";
                 badge.className = "estado offline";
-                intentosReconexion++;
             }
         }
 
-        async function darLargada(e) {
-            e.preventDefault();
-
+        async function darLargada() {
             const auto = document.getElementById('num_auto').value.trim();
-            const tramo = document.getElementById('tramo').value;
-            const categoria = document.getElementById('categoria').value;
-            const juez = document.getElementById('juez').value.trim();
-            const piloto = document.getElementById('piloto').value.trim();
-            const copiloto = document.getElementById('copiloto').value.trim();
-            const representante = document.getElementById('representante').value.trim();
-            const ciudad = document.getElementById('ciudad').value.trim();
-
-            if (!auto || !tramo || !categoria || !juez || !piloto || !representante || !ciudad) {
-                alert("⚠️ Completa todos los campos requeridos (*)");
+            
+            if (!auto) {
+                alert("Ingresa el número de auto");
+                document.getElementById('num_auto').focus();
                 return;
             }
 
-            // Validar duplicado
-            const yaExiste = historialLocal.some(item => item.auto === auto && item.tramo === tramo);
-            if (yaExiste) {
-                if (!confirm(`⚠️ Auto #${auto} ya fue registrado en ${tramo}.\n¿Registrar nuevamente?`)) return;
+            // Validar que exista el participante
+            try {
+                const res = await fetch(`${URL_SERVIDOR}/api/participante/${auto}`);
+                if (!res.ok) {
+                    alert(`⚠️ Auto #${auto} no está registrado.\n\nVe a REGISTRO DE PARTICIPANTES para agregarlo.`);
+                    return;
+                }
+            } catch (e) {
+                alert("No se puede verificar el auto (offline)");
             }
 
             const hora = new Date().toLocaleTimeString('es-PE', { hour12: false }) + '.' + new Date().getMilliseconds().toString().padStart(3, '0');
@@ -180,13 +225,6 @@
             const registro = {
                 id: Date.now(),
                 auto: auto,
-                tramo: tramo,
-                categoria: categoria,
-                juez: juez,
-                piloto: piloto,
-                copiloto: copiloto,
-                representante: representante,
-                ciudad: ciudad,
                 hora: hora,
                 tipo: 'partida',
                 enviado: false
@@ -194,7 +232,7 @@
 
             historialLocal.unshift(registro);
             guardarYRenderizar();
-            document.querySelector('form').reset();
+            document.getElementById('num_auto').value = '';
             document.getElementById('num_auto').focus();
             await sincronizarPendientes();
         }
@@ -203,14 +241,26 @@
             for (let item of historialLocal) {
                 if (!item.enviado) {
                     try {
+                        // Obtener datos del participante
+                        const resParticipante = await fetch(`${URL_SERVIDOR}/api/participante/${item.auto}`);
+                        const datosParticipante = await resParticipante.json();
+                        
+                        // Determinar tramo de la URL o usar default
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const tramo = urlParams.get('tramo') || 'PE-01';
+
                         const res = await fetch(`${URL_SERVIDOR}/api/partida`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(item)
+                            body: JSON.stringify({
+                                auto: item.auto,
+                                tramo: tramo,
+                                hora: item.hora,
+                                juez: 'Juez de Partida'
+                            })
                         });
                         if (res.ok) item.enviado = true;
                     } catch (e) {
-                        console.log("Sincronización fallida, reintentando...");
                         break;
                     }
                 }
@@ -220,77 +270,44 @@
 
         function guardarYRenderizar() {
             localStorage.setItem('partidas_local', JSON.stringify(historialLocal));
-            const tbody = document.getElementById('historial-body');
             
-            if (historialLocal.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5">Sin registros</td></tr>';
+            const div = document.getElementById('ultimos-autos');
+            const ultimos = historialLocal.slice(0, 10);
+            
+            if (ultimos.length === 0) {
+                div.innerHTML = '<div style="color: #666; text-align: center;">Sin registros</div>';
                 return;
             }
 
-            tbody.innerHTML = historialLocal.map(item => `
-                <tr>
-                    <td><strong>#${item.auto}</strong></td>
-                    <td>${item.piloto}</td>
-                    <td>${item.tramo}</td>
-                    <td>${item.hora}</td>
-                    <td>${item.enviado ? '✅' : '⏳'}</td>
-                </tr>
+            div.innerHTML = ultimos.map(item => `
+                <div class="fila-auto">
+                    <strong>#${item.auto}</strong>
+                    <span class="hora">${item.hora}</span>
+                    <span class="estado ${item.enviado ? 'estado-ok' : 'estado-pendiente'}">
+                        ${item.enviado ? '✅' : '⏳'}
+                    </span>
+                </div>
             `).join('');
         }
 
-        async function finalizarYLimpiarTramo() {
+        async function finalizarTramo() {
             if (historialLocal.length === 0) {
-                alert("No hay registros en este tramo.");
+                alert("No hay registros");
                 return;
             }
 
-            const tramo = document.getElementById('tramo').value || 'general';
-            if (!confirm(`¿Finalizar tramo ${tramo}? Se exportará el Excel y se limpiarán los datos.`)) return;
-
-            const nombreArchivo = `${tramo.toLowerCase()}-partida-${new Date().getTime()}.xlsx`;
-            const datosExcel = historialLocal.map(item => ({
-                "Auto": item.auto,
-                "Piloto": item.piloto,
-                "Copiloto": item.copiloto || '',
-                "Categoría": item.categoria,
-                "Tramo": item.tramo,
-                "Hora": item.hora,
-                "Juez": item.juez,
-                "Representante": item.representante,
-                "Ciudad": item.ciudad
-            }));
-
-            const worksheet = XLSX.utils.json_to_sheet(datosExcel);
-            worksheet['!cols'] = [
-                { wch: 8 }, { wch: 16 }, { wch: 16 }, { wch: 15 }, { wch: 8 },
-                { wch: 12 }, { wch: 16 }, { wch: 18 }, { wch: 15 }
-            ];
-
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Partidas");
-            XLSX.writeFile(workbook, nombreArchivo);
-
-            // Respaldo en servidor
-            const excelBase64 = XLSX.write(workbook, { bookType: 'xlsx', type: 'base64' });
-            try {
-                await fetch(`${URL_SERVIDOR}/api/guardar-excel-respaldo`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nombreArchivo, contenidoBase64: excelBase64 })
-                });
-            } catch (e) {
-                console.log("Respaldo no disponible (offline)");
-            }
-
+            alert(`✅ Tramo finalizado con ${historialLocal.length} autos registrados.\n\nSincronización completada.`);
             historialLocal = [];
             localStorage.removeItem('partidas_local');
             guardarYRenderizar();
-            alert(`✅ Tramo ${tramo} finalizado. Se descargó ${nombreArchivo}`);
         }
 
         setInterval(comprobarConexion, 5000);
         guardarYRenderizar();
         comprobarConexion();
+
+        // Auto-focus en input
+        document.getElementById('num_auto').focus();
     </script>
 
 </body>
