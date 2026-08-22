@@ -72,7 +72,7 @@
         matrizAutos.forEach(numAuto => {
             const opt = document.createElement('option');
             opt.value = numAuto;
-            opt.textContent = `#${numAuto}`;
+            opt.textContent = numAuto;
             selectAuto.appendChild(opt);
         });
 
@@ -96,7 +96,7 @@
 
             const ahora = new Date();
             const horaStr = ahora.toTimeString().split(' ')[0] + '.' + String(ahora.getMilliseconds()).padStart(3, '0');
-            const nuevoRegistro = { auto: `#${auto}`, tramo, hora: horaStr, estado: 'ENVIADO' };
+            const nuevoRegistro = { auto: auto, tramo, hora: horaStr, estado: 'ENVIADO' };
 
             try {
                 await fetch('/api/llegada', {
@@ -124,50 +124,37 @@
             `).join('');
         }
 
-        // Función para descargar localmente en Android y sincronizar con el servidor
-async function exportarExcel() {
-    if (registrosLocal.length === 0) {
-        alert("⚠️ No hay registros en este tramo para exportar.");
-        return;
-    }
+        async function exportarExcel() {
+            if (registrosLocal.length === 0) {
+                alert("⚠️ No hay registros para exportar.");
+                return;
+            }
+            const tramo = document.getElementById('tramo').value;
 
-    const tramo = document.getElementById('tramo').value;
-    const esLlegada = window.location.pathname.includes('llegada');
-    const tipo = esLlegada ? 'llegada' : 'partida';
+            try {
+                const res = await fetch('/api/guardar-respaldo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tipo: 'llegada', tramo, registros: registrosLocal })
+                });
 
-    try {
-        // 1. Enviar datos al servidor para que aparezca en laptop.html
-        const res = await fetch('/api/guardar-respaldo', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                tipo: tipo,
-                tramo: tramo,
-                registros: registrosLocal
-            })
-        });
-
-        const data = await res.json();
-
-        if (data.ok) {
-            alert(`✅ Respaldo guardado en el servidor:\n${data.archivo}`);
-            
-            // 2. Descarga directa automática en la carpeta Descargas del móvil
-            const downloadUrl = `/respaldos/${data.archivo}`;
-            const a = document.createElement('a');
-            a.href = downloadUrl;
-            a.download = data.archivo;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        } else {
-            alert("❌ Error del servidor: " + (data.error || "No se pudo crear el archivo"));
+                const data = await res.json();
+                if (data.ok) {
+                    alert(`✅ Respaldo guardado exitosamente:\n${data.archivo}`);
+                    // Descarga directa en celular
+                    const link = document.createElement('a');
+                    link.href = `/respaldos/${data.archivo}`;
+                    link.download = data.archivo;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } else {
+                    alert("❌ Error: " + data.error);
+                }
+            } catch (e) {
+                alert("❌ Error al guardar el respaldo en el servidor.");
+            }
         }
-    } catch (e) {
-        console.error(e);
-        alert("❌ Error de red al intentar conectar con el servidor.");
-    }
-}
     </script>
 </body>
 </html>
