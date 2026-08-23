@@ -162,12 +162,13 @@
         </div>
 
         <div class="card">
-            <h2>📥 Exportar a CSV y Guardar</h2>
+            <h2>📥 Exportar a Excel (.xlsx)</h2>
             
             <div class="info">
                 <strong>📌 IMPORTANTE:</strong><br>
-                Los datos se guardan en el servidor y en tu celular.<br>
-                Puedes descargarlos incluso sin internet.
+                ✅ Se guarda en el servidor<br>
+                ✅ Se descarga en tu celular<br>
+                ✅ Aparece en Dashboard para descargar
             </div>
 
             <div class="form-group">
@@ -183,7 +184,7 @@
             </div>
 
             <button class="btn" onclick="exportarDatos()">
-                📥 Exportar a CSV
+                📥 Exportar a Excel (.xlsx)
             </button>
         </div>
 
@@ -259,9 +260,9 @@
                     const blob = await response.blob();
                     const link = document.createElement('a');
                     link.href = window.URL.createObjectURL(blob);
-                    link.download = `respaldo-${tramo}.csv`;
+                    link.download = `respaldo-${tramo}.xlsx`;
                     link.click();
-                    alert(`✅ Respaldo de ${tramo} descargado y guardado en servidor`);
+                    alert(`✅ Respaldo de ${tramo} descargado y guardado en servidor\n\nPuedes descargarlo desde Dashboard → RESPALDOS`);
                     cargarRespaldos();
                 } else {
                     alert('❌ Error descargando respaldo');

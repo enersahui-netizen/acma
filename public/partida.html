@@ -322,10 +322,35 @@
                 return;
             }
 
-            alert(`✅ Tramo finalizado con ${historialLocal.length} autos registrados.\n\nSincronización completada.`);
-            historialLocal = [];
-            localStorage.removeItem('partidas_local');
-            guardarYRenderizar();
+            const tramo = document.getElementById('tramo').value;
+            if (!tramo) {
+                alert("Selecciona un tramo");
+                return;
+            }
+
+            try {
+                // Exportar a Excel
+                const url = `${URL_SERVIDOR}/api/exportar-excel-respaldo/${tramo}`;
+                const response = await fetch(url);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const link = document.createElement('a');
+                    link.href = window.URL.createObjectURL(blob);
+                    link.download = `partida-${tramo}.xlsx`;
+                    link.click();
+                    
+                    alert(`✅ Tramo ${tramo} finalizado\n\n${historialLocal.length} partidas registradas\n\nArchivo descargado y guardado en servidor`);
+                    
+                    // Limpiar historial
+                    historialLocal = [];
+                    localStorage.removeItem('partidas_local');
+                    guardarYRenderizar();
+                } else {
+                    alert('❌ Error al generar respaldo Excel');
+                }
+            } catch (e) {
+                alert('❌ Error: ' + e.message);
+            }
         }
 
         setInterval(comprobarConexion, 5000);
