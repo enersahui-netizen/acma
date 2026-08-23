@@ -1,1 +1,424 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultados - ACMA Rally</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Arial Black', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            background-attachment: fixed;
+            color: #fff;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            background: linear-gradient(135deg, #00ff00 0%, #00cc00 100%);
+            color: #000;
+            padding: 25px;
+            margin-bottom: 40px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.8);
+            font-size: 2.8rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+        .tramo-label {
+            font-size: 1.2rem;
+            margin-top: 10px;
+            color: #000;
+            font-weight: bold;
+        }
+        .categoria-block {
+            background: rgba(20, 20, 20, 0.95);
+            border: 4px solid #00ff00;
+            border-radius: 15px;
+            padding: 0;
+            margin-bottom: 50px;
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.4);
+            overflow: hidden;
+        }
+        .categoria-header {
+            background: linear-gradient(90deg, #00ff00 0%, #00cc00 100%);
+            color: #000;
+            padding: 15px 25px;
+            font-size: 1.6rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .auto-card {
+            padding: 25px;
+            border-bottom: 3px solid #333;
+            display: grid;
+            grid-template-columns: 100px 1fr 2fr 1fr;
+            gap: 25px;
+            align-items: center;
+            transition: all 0.3s;
+            background: rgba(0, 0, 0, 0.3);
+        }
+        .auto-card:hover {
+            background: rgba(0, 255, 0, 0.05);
+        }
+        .auto-card:last-child {
+            border-bottom: none;
+        }
+        .posicion-numero {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .posicion {
+            font-size: 3.5rem;
+            font-weight: 900;
+            color: #00ff00;
+            line-height: 1;
+            text-shadow: 0 0 20px rgba(0, 255, 0, 0.6);
+        }
+        .posicion.oro {
+            color: #ffd700;
+            font-size: 4rem;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+        }
+        .posicion.plata {
+            color: #c0c0c0;
+            font-size: 3.8rem;
+            text-shadow: 0 0 20px rgba(192, 192, 192, 0.6);
+        }
+        .posicion.bronce {
+            color: #cd7f32;
+            font-size: 3.6rem;
+            text-shadow: 0 0 20px rgba(205, 127, 50, 0.6);
+        }
+        .numero-auto {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: #00ff00;
+            text-align: center;
+            background: rgba(0, 255, 0, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #00ff00;
+            text-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+        }
+        .datos-piloto {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            justify-content: center;
+        }
+        .piloto-nombre {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            line-height: 1.2;
+        }
+        .copiloto-nombre {
+            font-size: 1.1rem;
+            color: #00ff00;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .vehiculo-info {
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+        .tiempo-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .tiempo {
+            font-size: 2rem;
+            font-weight: 900;
+            color: #00ff00;
+            text-align: center;
+            background: rgba(0, 255, 0, 0.1);
+            padding: 15px 25px;
+            border-radius: 8px;
+            border: 2px solid #00ff00;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+        .tiempo-label {
+            font-size: 0.8rem;
+            color: #aaa;
+            text-transform: uppercase;
+        }
+        .sin-datos {
+            text-align: center;
+            color: #aaa;
+            padding: 60px 30px;
+            font-size: 1.3rem;
+        }
+        .controles {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 40px;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+            border: 2px solid #00ff00;
+        }
+        .controles label {
+            color: #00ff00;
+            font-weight: 900;
+            text-transform: uppercase;
+            font-size: 1.1rem;
+        }
+        .controles select {
+            background: #1a1a1a;
+            color: #00ff00;
+            border: 2px solid #00ff00;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+        .botones {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 40px;
+        }
+        .btn {
+            background: linear-gradient(135deg, #00ff00 0%, #00cc00 100%);
+            color: #000;
+            padding: 16px 40px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 900;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .btn:hover {
+            transform: scale(1.08);
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.8);
+        }
+        .btn-secondary {
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            color: #fff;
+            box-shadow: 0 0 20px rgba(2, 132, 199, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            🏁 RALLY ACMA 2026
+            <div class="tramo-label" id="tramo-info">Cargando resultados...</div>
+        </div>
 
+        <div class="controles">
+            <label for="tramo-select">📍 Selecciona Tramo:</label>
+            <select id="tramo-select" onchange="cambiarTramo()">
+                <option value="">Todos los Tramos</option>
+                <option value="PE-01">PE-01</option>
+                <option value="PE-02">PE-02</option>
+                <option value="PE-03">PE-03</option>
+                <option value="PE-04">PE-04</option>
+                <option value="PE-05">PE-05</option>
+            </select>
+        </div>
+
+        <div id="resultados-container">
+            <div class="sin-datos">⏳ Cargando resultados...</div>
+        </div>
+
+        <div class="botones">
+            <button class="btn" onclick="imprimirResultados()">🖨️ Imprimir</button>
+            <button class="btn btn-secondary" onclick="descargarExcelResultados()">📥 Descargar Excel</button>
+            <button class="btn btn-secondary" onclick="volverInicio()">← Volver Inicio</button>
+        </div>
+    </div>
+
+    <script>
+        const URL_SERVIDOR = window.location.origin;
+
+        async function cargarResultados() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tramoURL = urlParams.get('tramo');
+            const tramoSelect = document.getElementById('tramo-select');
+            
+            if (tramoURL) {
+                tramoSelect.value = tramoURL;
+            }
+
+            const tramo = tramoSelect.value || '';
+            
+            try {
+                const url = tramo 
+                    ? `${URL_SERVIDOR}/api/resultados-tramo/${tramo}`
+                    : `${URL_SERVIDOR}/api/resultados-todos`;
+                
+                console.log('Llamando a:', url);
+                const res = await fetch(url);
+                const data = await res.json();
+
+                console.log('Respuesta:', data);
+
+                if (!data.ok) {
+                    document.getElementById('resultados-container').innerHTML = 
+                        '<div class="sin-datos">❌ Error: ' + (data.error || 'Error desconocido') + '</div>';
+                    return;
+                }
+
+                generarHTML(data.resultados, tramo);
+            } catch (e) {
+                console.error("Error:", e);
+                document.getElementById('resultados-container').innerHTML = 
+                    '<div class="sin-datos">❌ Error de conexión: ' + e.message + '</div>';
+            }
+        }
+
+        function generarHTML(resultados, tramoFiltro) {
+            if (!resultados || Object.keys(resultados).length === 0) {
+                document.getElementById('resultados-container').innerHTML = 
+                    '<div class="sin-datos">📭 Sin datos de carreras - Registra partidas y llegadas primero</div>';
+                return;
+            }
+
+            const tramoInfo = tramoFiltro ? tramoFiltro : 'TODOS LOS TRAMOS';
+            document.getElementById('tramo-info').textContent = `TRAMO: ${tramoInfo}`;
+
+            let html = '';
+
+            // Agrupar por categoría
+            const porCategoria = {};
+            
+            Object.values(resultados).forEach(item => {
+                const categoria = item.categoria || 'SIN CATEGORÍA';
+                if (!porCategoria[categoria]) {
+                    porCategoria[categoria] = [];
+                }
+                porCategoria[categoria].push(item);
+            });
+
+            console.log('Categorías:', Object.keys(porCategoria));
+
+            // Generar HTML por categoría
+            Object.entries(porCategoria).forEach(([categoria, autos]) => {
+                // Ordenar por tiempo
+                autos.sort((a, b) => {
+                    const tiempoA = a.tiempo_ms || Infinity;
+                    const tiempoB = b.tiempo_ms || Infinity;
+                    return tiempoA - tiempoB;
+                });
+
+                html += `<div class="categoria-block">`;
+                html += `<div class="categoria-header">🏆 ${categoria}</div>`;
+
+                autos.forEach((auto, index) => {
+                    const posicion = index + 1;
+                    let clasePosicion = '';
+                    let simboloPosicion = `${posicion}º`;
+                    
+                    if (posicion === 1) {
+                        clasePosicion = 'oro';
+                        simboloPosicion = '🥇';
+                    } else if (posicion === 2) {
+                        clasePosicion = 'plata';
+                        simboloPosicion = '🥈';
+                    } else if (posicion === 3) {
+                        clasePosicion = 'bronce';
+                        simboloPosicion = '🥉';
+                    }
+
+                    // Formatear tiempo
+                    let tiempoFormato = 'DNF';
+                    if (auto.tiempo_ms !== null && auto.tiempo_ms !== undefined) {
+                        const minutos = Math.floor(auto.tiempo_ms / 60000);
+                        const segundos = Math.floor((auto.tiempo_ms % 60000) / 1000);
+                        const milisegundos = auto.tiempo_ms % 1000;
+                        tiempoFormato = `${String(minutos).padStart(2, '0')}:${String(segundos).padStart(2, '0')}.${String(milisegundos).padStart(3, '0')}`;
+                    }
+
+                    html += `
+                        <div class="auto-card">
+                            <div class="posicion-numero">
+                                <div class="posicion ${clasePosicion}">${simboloPosicion}</div>
+                                <div class="numero-auto">#${auto.auto}</div>
+                            </div>
+                            <div class="datos-piloto">
+                                <div class="piloto-nombre">${auto.piloto || 'N/A'}</div>
+                                <div class="copiloto-nombre">${auto.copiloto || '---'}</div>
+                                <div class="vehiculo-info">${auto.ciudad || '-'}</div>
+                            </div>
+                            <div class="tiempo-display">
+                                <div class="tiempo">${tiempoFormato}</div>
+                                <div class="tiempo-label">Tiempo Tramo</div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `</div>`;
+            });
+
+            document.getElementById('resultados-container').innerHTML = html;
+        }
+
+        function cambiarTramo() {
+            const tramo = document.getElementById('tramo-select').value;
+            if (tramo) {
+                window.history.pushState(null, '', `?tramo=${tramo}`);
+            }
+            cargarResultados();
+        }
+
+        function imprimirResultados() {
+            window.print();
+        }
+
+        async function descargarExcelResultados() {
+            const tramo = document.getElementById('tramo-select')?.value || 'TODOS';
+            const url = `${URL_SERVIDOR}/api/exportar-excel-respaldo/${tramo}`;
+            
+            try {
+                const response = await fetch(url);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const link = document.createElement('a');
+                    link.href = window.URL.createObjectURL(blob);
+                    link.download = `resultados-${tramo}.xlsx`;
+                    link.click();
+                } else {
+                    alert('❌ Error descargando archivo');
+                }
+            } catch (e) {
+                alert('❌ Error: ' + e.message);
+            }
+        }
+
+        function volverInicio() {
+            window.location.href = '/';
+        }
+
+        // Cargar al abrir
+        cargarResultados();
+        
+        // Recargar cada 15 segundos
+        setInterval(cargarResultados, 15000);
+    </script>
+</body>
+</html>
