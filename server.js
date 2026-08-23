@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const WebSocket = require('ws');
 const http = require('http');
+const ExcelJS = require('exceljs');
 
 const app = express();
 const server = http.createServer(app);
@@ -69,7 +70,7 @@ function inicializarBD() {
     // Crear usuario admin por defecto si no existe
     db.get("SELECT * FROM usuarios WHERE username = 'admin'", (err, row) => {
         if (!row) {
-            const hash = bcrypt.hashSync('721034', 10);
+            const hash = bcrypt.hashSync('admin123', 10);
             db.run("INSERT INTO usuarios (username, password_hash, rol) VALUES (?, ?, ?)", 
                 ['admin', hash, 'director'], (err) => {
                     if (!err) console.log("✅ Usuario admin creado (pass: admin123)");
@@ -501,7 +502,7 @@ app.get('/api/lista-respaldos', (req, res) => {
 });
 
 // Exportar datos a Excel y guardar como respaldo
-app.get('/api/exportar-excel-respaldo/:tramo', (req, res) => {
+app.get('/api/exportar-excel-respaldo/:tramo', async (req, res) => {
     const tramo = req.params.tramo || 'TODOS';
 
     let query = `
@@ -525,45 +526,77 @@ app.get('/api/exportar-excel-respaldo/:tramo', (req, res) => {
 
     const params = tramo !== 'TODOS' ? [tramo] : [];
 
-    db.all(query, params, (err, rows) => {
+    db.all(query, params, async (err, rows) => {
         if (err) {
             console.error(err);
             return res.status(500).json({ ok: false, error: "Error obteniendo datos" });
         }
 
-        // Crear contenido CSV
-        let csv = 'Auto,Tramo,Hora Partida,Hora Llegada,Juez Partida,Juez Llegada,Tiempo (ms)\n';
-        
-        rows.forEach(row => {
-            let tiempo_ms = null;
-            if (row.hora_partida && row.hora_llegada) {
-                const [hp, mp, sp] = row.hora_partida.split(':');
-                const [hl, ml, sl] = row.hora_llegada.split(':');
-                const msPartida = parseInt(hp) * 3600000 + parseInt(mp) * 60000 + parseFloat(sp) * 1000;
-                const msLlegada = parseInt(hl) * 3600000 + parseInt(ml) * 60000 + parseFloat(sl) * 1000;
-                tiempo_ms = msLlegada - msPartida;
+        try {
+            // Crear libro Excel
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Tiempos');
+
+            // Encabezados
+            worksheet.columns = [
+                { header: 'Auto', key: 'auto', width: 10 },
+                { header: 'Tramo', key: 'tramo', width: 12 },
+                { header: 'Hora Partida', key: 'hora_partida', width: 15 },
+                { header: 'Hora Llegada', key: 'hora_llegada', width: 15 },
+                { header: 'Juez Partida', key: 'juez_partida', width: 18 },
+                { header: 'Juez Llegada', key: 'juez_llegada', width: 18 },
+                { header: 'Tiempo (ms)', key: 'tiempo_ms', width: 15 }
+            ];
+
+            // Estilar encabezados
+            worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0284C7' } };
+
+            // Agregar datos
+            rows.forEach(row => {
+                let tiempo_ms = null;
+                if (row.hora_partida && row.hora_llegada) {
+                    const [hp, mp, sp] = row.hora_partida.split(':');
+                    const [hl, ml, sl] = row.hora_llegada.split(':');
+                    const msPartida = parseInt(hp) * 3600000 + parseInt(mp) * 60000 + parseFloat(sp) * 1000;
+                    const msLlegada = parseInt(hl) * 3600000 + parseInt(ml) * 60000 + parseFloat(sl) * 1000;
+                    tiempo_ms = Math.round(msLlegada - msPartida);
+                }
+
+                worksheet.addRow({
+                    auto: row.auto,
+                    tramo: row.tramo,
+                    hora_partida: row.hora_partida || '-',
+                    hora_llegada: row.hora_llegada || '-',
+                    juez_partida: row.juez_partida || '-',
+                    juez_llegada: row.juez_llegada || '-',
+                    tiempo_ms: tiempo_ms || '-'
+                });
+            });
+
+            // Guardar en servidor
+            const folderPath = path.join(__dirname, 'respaldos');
+            if (!fs.existsSync(folderPath)) {
+                fs.mkdirSync(folderPath, { recursive: true });
             }
 
-            csv += `${row.auto},"${row.tramo}","${row.hora_partida || '-'}","${row.hora_llegada || '-'}","${row.juez_partida || '-'}","${row.juez_llegada || '-'}","${tiempo_ms || '-'}"\n`;
-        });
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            const nombreArchivo = `respaldo-${tramo}-${timestamp}.xlsx`;
+            const filePath = path.join(folderPath, nombreArchivo);
 
-        // Guardar en servidor
-        const folderPath = path.join(__dirname, 'respaldos');
-        if (!fs.existsSync(folderPath)) {
-            fs.mkdirSync(folderPath, { recursive: true });
+            // Guardar archivo
+            await workbook.xlsx.writeFile(filePath);
+            console.log(`✅ Respaldo Excel guardado: ${filePath}`);
+
+            // Retornar archivo descargable
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.setHeader('Content-Disposition', `attachment; filename="${nombreArchivo}"`);
+            await workbook.xlsx.write(res);
+            res.end();
+        } catch (error) {
+            console.error("Error generando Excel:", error);
+            res.status(500).json({ ok: false, error: "Error generando Excel: " + error.message });
         }
-
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const nombreArchivo = `respaldo-${tramo}-${timestamp}.csv`;
-        const filePath = path.join(folderPath, nombreArchivo);
-
-        fs.writeFileSync(filePath, csv, 'utf-8');
-        console.log(`✅ Respaldo guardado: ${filePath}`);
-
-        // Retornar archivo descargable
-        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-        res.setHeader('Content-Disposition', `attachment; filename="${nombreArchivo}"`);
-        res.send(csv);
     });
 });
 
