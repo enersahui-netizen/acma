@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Participantes - ACMA</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #f8fafc;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            padding: 20px;
+            border-radius: 12px;
+            border-bottom: 2px solid #38bdf8;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            font-size: 1.8rem;
+            color: #38bdf8;
+            margin: 0;
+        }
+        .btn-volver {
+            background: #334155;
+            color: #f8fafc;
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .btn-volver:hover {
+            background: #475569;
+        }
+        .card {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            margin-bottom: 20px;
+        }
+        .card h2 {
+            color: #38bdf8;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            color: #cbd5e1;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        input[type="file"], input[type="text"], select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #334155;
+            background: #1e293b;
+            color: #f8fafc;
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+        input[type="file"]::-webkit-file-upload-button {
+            background: #0284c7;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            width: 100%;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(2, 132, 199, 0.3);
+        }
+        .btn:disabled {
+            background: #64748b;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-secondary {
+            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+            margin-top: 10px;
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        }
+        .mensaje {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-weight: 500;
+            display: none;
+        }
+        .mensaje.success {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid #22c55e;
+            color: #86efac;
+            display: block;
+        }
+        .mensaje.error {
+            background: rgba(220, 38, 38, 0.1);
+            border: 1px solid #dc2626;
+            color: #fca5a5;
+            display: block;
+        }
+        .info-box {
+            background: rgba(56, 189, 248, 0.1);
+            border-left: 4px solid #38bdf8;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+            color: #cbd5e1;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+        thead {
+            background: rgba(15, 23, 42, 0.8);
+        }
+        th {
+            padding: 12px;
+            text-align: left;
+            color: #94a3b8;
+            font-weight: 600;
+            border-bottom: 2px solid #334155;
+        }
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #334155;
+        }
+        tbody tr:hover {
+            background: rgba(56, 189, 248, 0.05);
+        }
+        .estadisticas {
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid #334155;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            text-align: center;
+        }
+        .stat {
+            display: flex;
+            flex-direction: column;
+        }
+        .stat-valor {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #38bdf8;
+        }
+        .stat-label {
+            color: #94a3b8;
+            font-size: 0.85rem;
+            margin-top: 5px;
+        }
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>📋 REGISTRO DE PARTICIPANTES</h1>
+            <a href="/" class="btn-volver">← Volver</a>
+        </div>
+
+        <div class="card">
+            <h2>1️⃣ Cargar Participantes desde CSV</h2>
+            
+            <div class="info-box">
+                <strong>📌 Formato del CSV:</strong><br>
+                La primera línea debe tener los encabezados:<br>
+                <code>auto,piloto,copiloto,categoria,representante,ciudad</code><br><br>
+                <strong>Ejemplo:</strong><br>
+                <code>402,Carlos Ruiz,Ana Pérez,Rally 3,Team Ayaviri,Puno</code>
+            </div>
+
+            <div id="mensaje" class="mensaje"></div>
+
+            <div class="form-group">
+                <label for="archivo-csv">Selecciona archivo CSV:</label>
+                <input type="file" id="archivo-csv" accept=".csv">
+            </div>
+
+            <button class="btn btn-secondary" onclick="cargarCSV()">
+                <span id="btn-text">📥 Cargar CSV</span>
+                <span id="spinner" class="spinner" style="display: none;"></span>
+            </button>
+
+            <button class="btn btn-danger" onclick="descargarTemplate()" style="margin-top: 10px;">
+                📄 Descargar Template CSV
+            </button>
+        </div>
+
+        <div class="card">
+            <h2>2️⃣ O Registrar Manualmente</h2>
+
+            <div class="form-group">
+                <label for="auto">N° Auto *</label>
+                <input type="number" id="auto" placeholder="Ej: 402" required>
+            </div>
+
+            <div class="form-group">
+                <label for="piloto">Piloto</label>
+                <input type="text" id="piloto" placeholder="Nombre del piloto">
+            </div>
+
+            <div class="form-group">
+                <label for="copiloto">Copiloto</label>
+                <input type="text" id="copiloto" placeholder="Nombre del copiloto">
+            </div>
+
+            <div class="form-group">
+                <label for="categoria">Categoría</label>
+                <input type="text" id="categoria" placeholder="Ej: Rally 3">
+            </div>
+
+            <div class="form-group">
+                <label for="representante">Representante/Equipo</label>
+                <input type="text" id="representante" placeholder="Equipo o empresa">
+            </div>
+
+            <div class="form-group">
+                <label for="ciudad">Ciudad</label>
+                <input type="text" id="ciudad" placeholder="Ciudad de origen">
+            </div>
+
+            <button class="btn" onclick="registrarParticipante()">
+                ✅ Registrar Participante
+            </button>
+        </div>
+
+        <div class="card">
+            <h2>3️⃣ Participantes Registrados</h2>
+
+            <div class="estadisticas" id="estadisticas">
+                <div class="stat">
+                    <div class="stat-valor">0</div>
+                    <div class="stat-label">Total Registrados</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-valor">0</div>
+                    <div class="stat-label">Tramos Disponibles</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-valor">0</div>
+                    <div class="stat-label">Ciudades</div>
+                </div>
+            </div>
+
+            <table id="tabla-participantes">
+                <thead>
+                    <tr>
+                        <th>Auto</th>
+                        <th>Piloto</th>
+                        <th>Copiloto</th>
+                        <th>Categoría</th>
+                        <th>Representante</th>
+                        <th>Ciudad</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-participantes">
+                    <tr><td colspan="6" style="text-align: center; color: #94a3b8;">Sin participantes registrados</td></tr>
+                </tbody>
+            </table>
+
+            <button class="btn btn-danger" onclick="limpiarTodo()" style="margin-top: 15px;">
+                🗑️ Limpiar Todos los Participantes
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const URL_SERVIDOR = window.location.origin;
+
+        async function cargarCSV() {
+            const archivo = document.getElementById('archivo-csv').files[0];
+            if (!archivo) {
+                mostrarMensaje('Por favor selecciona un archivo CSV', 'error');
+                return;
+            }
+
+            const lector = new FileReader();
+            lector.onload = async (e) => {
+                try {
+                    const contenido = e.target.result;
+                    const lineas = contenido.trim().split('\n');
+                    
+                    if (lineas.length < 2) {
+                        mostrarMensaje('El CSV debe tener al menos un encabezado y una fila de datos', 'error');
+                        return;
+                    }
+
+                    const encabezados = lineas[0].split(',').map(h => h.trim().toLowerCase());
+                    const indiceAuto = encabezados.indexOf('auto');
+                    const indicePiloto = encabezados.indexOf('piloto');
+                    const indiceCopiloto = encabezados.indexOf('copiloto');
+                    const indiceCategoria = encabezados.indexOf('categoria');
+                    const indiceRepresentante = encabezados.indexOf('representante');
+                    const indiceCiudad = encabezados.indexOf('ciudad');
+
+                    if (indiceAuto === -1) {
+                        mostrarMensaje('El CSV debe tener una columna "auto"', 'error');
+                        return;
+                    }
+
+                    const participantes = [];
+                    for (let i = 1; i < lineas.length; i++) {
+                        const valores = lineas[i].split(',').map(v => v.trim());
+                        if (valores[indiceAuto]) {
+                            participantes.push({
+                                auto: valores[indiceAuto],
+                                piloto: indicePiloto !== -1 ? valores[indicePiloto] : '',
+                                copiloto: indiceCopiloto !== -1 ? valores[indiceCopiloto] : '',
+                                categoria: indiceCategoria !== -1 ? valores[indiceCategoria] : '',
+                                representante: indiceRepresentante !== -1 ? valores[indiceRepresentante] : '',
+                                ciudad: indiceCiudad !== -1 ? valores[indiceCiudad] : ''
+                            });
+                        }
+                    }
+
+                    mostrarCarga(true);
+
+                    const res = await fetch(`${URL_SERVIDOR}/api/participantes-bulk`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ participantes })
+                    });
+
+                    const data = await res.json();
+                    mostrarCarga(false);
+
+                    if (data.ok) {
+                        mostrarMensaje(`✅ ${participantes.length} participantes cargados correctamente`, 'success');
+                        document.getElementById('archivo-csv').value = '';
+                        cargarParticipantes();
+                    } else {
+                        mostrarMensaje('Error: ' + data.error, 'error');
+                    }
+                } catch (error) {
+                    mostrarCarga(false);
+                    mostrarMensaje('Error al procesar el CSV: ' + error.message, 'error');
+                }
+            };
+            lector.readAsText(archivo);
+        }
+
+        async function registrarParticipante() {
+            const auto = document.getElementById('auto').value.trim();
+            const piloto = document.getElementById('piloto').value.trim();
+            const copiloto = document.getElementById('copiloto').value.trim();
+            const categoria = document.getElementById('categoria').value.trim();
+            const representante = document.getElementById('representante').value.trim();
+            const ciudad = document.getElementById('ciudad').value.trim();
+
+            if (!auto) {
+                mostrarMensaje('El número de auto es obligatorio', 'error');
+                return;
+            }
+
+            mostrarCarga(true);
+
+            const res = await fetch(`${URL_SERVIDOR}/api/participantes-bulk`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    participantes: [{ auto, piloto, copiloto, categoria, representante, ciudad }]
+                })
+            });
+
+            const data = await res.json();
+            mostrarCarga(false);
+
+            if (data.ok) {
+                mostrarMensaje('✅ Participante registrado correctamente', 'success');
+                document.getElementById('auto').value = '';
+                document.getElementById('piloto').value = '';
+                document.getElementById('copiloto').value = '';
+                document.getElementById('categoria').value = '';
+                document.getElementById('representante').value = '';
+                document.getElementById('ciudad').value = '';
+                cargarParticipantes();
+            } else {
+                mostrarMensaje('Error: ' + data.error, 'error');
+            }
+        }
+
+        async function cargarParticipantes() {
+            try {
+                const res = await fetch(`${URL_SERVIDOR}/api/participantes`);
+                const data = await res.json();
+                const participantes = data.participantes || [];
+
+                document.getElementById('tbody-participantes').innerHTML = participantes.length === 0
+                    ? '<tr><td colspan="6" style="text-align: center; color: #94a3b8;">Sin participantes registrados</td></tr>'
+                    : participantes.map(p => `
+                        <tr>
+                            <td><strong>#${p.auto}</strong></td>
+                            <td>${p.piloto || '-'}</td>
+                            <td>${p.copiloto || '-'}</td>
+                            <td>${p.categoria || '-'}</td>
+                            <td>${p.representante || '-'}</td>
+                            <td>${p.ciudad || '-'}</td>
+                        </tr>
+                    `).join('');
+
+                // Actualizar estadísticas
+                const ciudades = new Set(participantes.map(p => p.ciudad).filter(c => c));
+                document.querySelector('.stat-valor').textContent = participantes.length;
+                document.querySelectorAll('.stat-valor')[2].textContent = ciudades.size;
+            } catch (e) {
+                console.error('Error cargando participantes:', e);
+            }
+        }
+
+        async function limpiarTodo() {
+            if (!confirm('⚠️ ¿Eliminar TODOS los participantes? Esta acción no se puede deshacer.')) {
+                return;
+            }
+
+            const res = await fetch(`${URL_SERVIDOR}/api/participantes`, { method: 'DELETE' });
+            const data = await res.json();
+
+            if (data.ok) {
+                mostrarMensaje('✅ Participantes eliminados', 'success');
+                cargarParticipantes();
+            } else {
+                mostrarMensaje('Error: ' + data.error, 'error');
+            }
+        }
+
+        function descargarTemplate() {
+            const csv = 'auto,piloto,copiloto,categoria,representante,ciudad\n402,Carlos Ruiz,Ana Pérez,Rally 3,Team Ayaviri,Puno\n403,Juan López,María García,Turismo,Motorsport,Juliaca\n404,Pedro Silva,Laura Rojas,General,Rally Club,Arequipa';
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'template-participantes.csv';
+            a.click();
+        }
+
+        function mostrarMensaje(texto, tipo) {
+            const div = document.getElementById('mensaje');
+            div.textContent = texto;
+            div.className = `mensaje ${tipo}`;
+            setTimeout(() => div.className = 'mensaje', 5000);
+        }
+
+        function mostrarCarga(visible) {
+            const btn = document.querySelector('button');
+            document.getElementById('spinner').style.display = visible ? 'inline-block' : 'none';
+        }
+
+        // Cargar participantes al abrir
+        cargarParticipantes();
+    </script>
+
+</body>
+</html>
