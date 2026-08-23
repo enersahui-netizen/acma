@@ -69,7 +69,7 @@ function inicializarBD() {
     // Crear usuario admin por defecto si no existe
     db.get("SELECT * FROM usuarios WHERE username = 'admin'", (err, row) => {
         if (!row) {
-            const hash = bcrypt.hashSync('admin123', 10);
+            const hash = bcrypt.hashSync('721034', 10);
             db.run("INSERT INTO usuarios (username, password_hash, rol) VALUES (?, ?, ?)", 
                 ['admin', hash, 'director'], (err) => {
                     if (!err) console.log("✅ Usuario admin creado (pass: admin123)");
