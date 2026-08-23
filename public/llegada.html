@@ -339,12 +339,20 @@
                     link.download = `llegada-${tramo}.xlsx`;
                     link.click();
                     
-                    alert(`✅ Tramo ${tramo} finalizado\n\n${historialLocal.length} llegadas registradas\n\nArchivo descargado y guardado en servidor`);
+                    alert(`✅ Tramo ${tramo} finalizado\n\n${historialLocal.length} llegadas registradas\n\nArchivo guardado en servidor`);
                     
                     // Limpiar historial
                     historialLocal = [];
                     localStorage.removeItem('llegadas_local');
                     guardarYRenderizar();
+
+                    // Esperar 1 segundo y abrir resultados
+                    setTimeout(() => {
+                        const verResultados = confirm(`\n🏁 ¿Ver resultados del tramo ${tramo}?`);
+                        if (verResultados) {
+                            window.location.href = `/resultados?tramo=${tramo}`;
+                        }
+                    }, 1000);
                 } else {
                     alert('❌ Error al generar respaldo Excel');
                 }
