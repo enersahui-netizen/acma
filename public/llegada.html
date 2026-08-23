@@ -332,6 +332,14 @@
         guardarYRenderizar();
         comprobarConexion();
 
+        // Sincronización automática cada 5 segundos
+        setInterval(comprobarConexion, 5000);
+        
+        // Guardar en localStorage antes de cerrar
+        window.addEventListener('beforeunload', () => {
+            localStorage.setItem('llegadas_local', JSON.stringify(historialLocal));
+        });
+
         // Auto-focus en input
         document.getElementById('num_auto').focus();
     </script>
