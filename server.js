@@ -129,6 +129,10 @@ app.get('/respaldos', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'respaldos.html'));
 });
 
+app.get('/resultados', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'resultados.html'));
+});
+
 // ================= ENDPOINTS DE AUTENTICACIÓN =================
 
 // Login
@@ -345,8 +349,145 @@ app.get('/api/obtener-datos-vivo', (req, res) => {
     });
 });
 
-// Obtener datos para reporte
-app.get('/api/reporte-datos', (req, res) => {
+// Obtener resultados de un tramo específico
+app.get('/api/resultados-tramo/:tramo', (req, res) => {
+    const tramo = req.params.tramo;
+
+    db.all("SELECT * FROM participantes", (err, participantes) => {
+        const mapParticipantes = {};
+        if (participantes) {
+            participantes.forEach(p => {
+                mapParticipantes[p.auto] = p;
+            });
+        }
+
+        let query = `
+            SELECT 
+                r1.auto, 
+                r1.tramo,
+                r1.hora as hora_partida,
+                r2.hora as hora_llegada
+            FROM registros r1
+            LEFT JOIN registros r2 ON r1.auto = r2.auto AND r1.tramo = r2.tramo AND r2.tipo = 'llegada'
+            WHERE r1.tipo = 'partida' AND r1.tramo = ?
+            ORDER BY r1.hora
+        `;
+
+        db.all(query, [tramo], (err, rows) => {
+            if (err) {
+                console.error(err);
+                return res.status(500).json({ ok: false, error: "Error obteniendo datos" });
+            }
+
+            // Calcular tiempos y agrupar
+            const resultados = {};
+            
+            rows.forEach(row => {
+                const participante = mapParticipantes[row.auto] || {};
+                let tiempo_ms = null;
+                
+                if (row.hora_partida && row.hora_llegada) {
+                    const [hp, mp, sp] = row.hora_partida.split(':');
+                    const [hl, ml, sl] = row.hora_llegada.split(':');
+                    const msPartida = parseInt(hp) * 3600000 + parseInt(mp) * 60000 + parseFloat(sp) * 1000;
+                    const msLlegada = parseInt(hl) * 3600000 + parseInt(ml) * 60000 + parseFloat(sl) * 1000;
+                    tiempo_ms = msLlegada - msPartida;
+                }
+
+                resultados[row.auto] = {
+                    auto: row.auto,
+                    tramo: row.tramo,
+                    categoria: participante.categoria || 'SIN CATEGORÍA',
+                    piloto: participante.piloto || 'N/A',
+                    copiloto: participante.copiloto || '---',
+                    ciudad: participante.ciudad || '-',
+                    tiempo_ms: tiempo_ms,
+                    hora_partida: row.hora_partida,
+                    hora_llegada: row.hora_llegada
+                };
+            });
+
+            // Calcular posiciones por categoría
+            const porCategoria = {};
+            Object.values(resultados).forEach(item => {
+                if (!porCategoria[item.categoria]) {
+                    porCategoria[item.categoria] = [];
+                }
+                porCategoria[item.categoria].push(item);
+            });
+
+            Object.values(porCategoria).forEach(categoria => {
+                categoria.sort((a, b) => (a.tiempo_ms || Infinity) - (b.tiempo_ms || Infinity));
+                categoria.forEach((item, index) => {
+                    resultados[item.auto].posicion = index + 1;
+                });
+            });
+
+            res.json({ ok: true, resultados });
+        });
+    });
+});
+
+// Obtener resultados de todos los tramos
+app.get('/api/resultados-todos', (req, res) => {
+    db.all("SELECT * FROM participantes", (err, participantes) => {
+        const mapParticipantes = {};
+        if (participantes) {
+            participantes.forEach(p => {
+                mapParticipantes[p.auto] = p;
+            });
+        }
+
+        let query = `
+            SELECT 
+                r1.auto, 
+                r1.tramo,
+                r1.hora as hora_partida,
+                r2.hora as hora_llegada
+            FROM registros r1
+            LEFT JOIN registros r2 ON r1.auto = r2.auto AND r1.tramo = r2.tramo AND r2.tipo = 'llegada'
+            WHERE r1.tipo = 'partida'
+            ORDER BY r1.tramo, r1.hora
+        `;
+
+        db.all(query, (err, rows) => {
+            if (err) {
+                console.error(err);
+                return res.status(500).json({ ok: false, error: "Error obteniendo datos" });
+            }
+
+            const resultados = {};
+            
+            rows.forEach(row => {
+                const participante = mapParticipantes[row.auto] || {};
+                let tiempo_ms = null;
+                
+                if (row.hora_partida && row.hora_llegada) {
+                    const [hp, mp, sp] = row.hora_partida.split(':');
+                    const [hl, ml, sl] = row.hora_llegada.split(':');
+                    const msPartida = parseInt(hp) * 3600000 + parseInt(mp) * 60000 + parseFloat(sp) * 1000;
+                    const msLlegada = parseInt(hl) * 3600000 + parseInt(ml) * 60000 + parseFloat(sl) * 1000;
+                    tiempo_ms = msLlegada - msPartida;
+                }
+
+                const key = `${row.auto}-${row.tramo}`;
+                resultados[key] = {
+                    auto: row.auto,
+                    tramo: row.tramo,
+                    categoria: participante.categoria || 'SIN CATEGORÍA',
+                    piloto: participante.piloto || 'N/A',
+                    copiloto: participante.copiloto || '---',
+                    ciudad: participante.ciudad || '-',
+                    tiempo_ms: tiempo_ms,
+                    hora_partida: row.hora_partida,
+                    hora_llegada: row.hora_llegada
+                };
+            });
+
+            res.json({ ok: true, resultados });
+        });
+    });
+});
     const { categoria, ciudad, tramo } = req.query;
 
     // Primero obtener participantes para datos adicionales
